@@ -1,0 +1,5 @@
+{
+    "clangd.path": "${workspaceFolder}/../../LLVM/bin/clangd.exe",
+    "editor.tabSize": 2,
+    "editor.formatOnSave": true
+}

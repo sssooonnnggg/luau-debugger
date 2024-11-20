@@ -1,0 +1,38 @@
+{
+  "version": 8,
+  "configurePresets": [
+    {
+      "name": "Windows-clang-debug",
+      "displayName": "Windows-clang-debug",
+      "generator": "Ninja",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/windows-clang.cmake",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CPP_DAP_ROOT": "${sourceDir}/../cppdap",
+        "LUAU_ROOT": "${sourceDir}/../luau",
+        "CPPDAP_BUILD_EXAMPLES": "ON",
+        "LUAU_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "Windows-clang-release",
+      "displayName": "Windows-clang-release",
+      "inherits": "Windows-clang-debug",
+      "binaryDir": "${sourceDir}/build"
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "DebugBuild",
+      "displayName": "Debug",
+      "configurePreset": "Windows-clang-debug",
+      "configuration": "Debug"
+    },
+    {
+      "name": "ReleaseBuild",
+      "displayName": "Release",
+      "configurePreset": "Windows-clang-release",
+      "configuration": "RelWithDebInfo"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "configurations": [
+    {
+      "type": "luau",
+      "request": "attach",
+      "name": "attach to luau debugger",
+      "address": "localhost",
+      "port": 58000
+    }
+  ]
+}

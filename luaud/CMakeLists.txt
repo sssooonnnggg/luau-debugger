@@ -1,0 +1,21 @@
+# luaud is a luau runtime combined with a luau debugger
+
+add_executable(luaud)
+target_sources(luaud
+  PRIVATE
+  ${LUAU_ROOT}/CLI/Require.cpp
+  main.cpp
+  luau_runtime.cpp
+)
+target_link_libraries(luaud PRIVATE Luau.VM Luau.Compiler Luau.CLI.lib Luau.Config Luau.Debugger)
+target_include_directories(
+  luaud
+  PRIVATE
+  ${LUAU_ROOT}/VM/include
+  ${LUAU_ROOT}/VM/src
+  ${LUAU_ROOT}/Compiler/include
+  ${LUAU_ROOT}/CLI
+  ${LUAU_ROOT}/Config/include
+  ${CMAKE_SOURCE_DIR}/debugger/include
+  ${CMAKE_CURRENT_SOURCE_DIR}
+)
