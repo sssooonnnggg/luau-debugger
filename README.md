@@ -57,8 +57,9 @@ A debugger for Luau with debug adapter protocol(DAP) support.
     - [x] function
     - [ ] userdata
   - [ ] Set variables
-  - [ ] Evaluate
+  - [x] Repl
   - [ ] Watch
+  - [ ] Hover
   - [x] Single step
     - [x] Step in
     - [x] Step over

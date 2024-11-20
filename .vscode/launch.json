@@ -10,6 +10,7 @@
       "request": "launch",
       "program": "${workspaceRoot}/build/luaud/luaud.exe",
       "args": [
+        "58000",
         "${workspaceRoot}/tests/main.lua"
       ],
       "stopAtEntry": false,
@@ -24,6 +25,7 @@
       "request": "launch",
       "program": "${workspaceRoot}/build/luaud/luaud.exe",
       "args": [
+        "58000",
         "${workspaceRoot}/tests/main.lua"
       ],
       "stopAtEntry": false,

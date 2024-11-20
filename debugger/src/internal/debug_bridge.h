@@ -76,6 +76,9 @@ class DebugBridge {
   // Called from **DAP** client to step out of function
   void stepOut();
 
+  // Called from **DAP** client to evaluate expression
+  ResponseOrError<EvaluateResponse> evaluate(const EvaluateRequest& request);
+
   // Thread safe call
   template <class F, class... Args>
   void threadSafeCall(F&& f, Args&&... args) {
@@ -107,10 +110,13 @@ class DebugBridge {
 
   using SingleStepProcessor = std::function<bool(lua_State*, lua_Debug* ar)>;
   void processSingleStep(SingleStepProcessor processor);
-
   void enableDebugStep(bool enable);
 
   void resumeInternal();
+
+  EvaluateResponse evaluateRepl(const EvaluateRequest& request);
+  EvaluateResponse evaluateWatch(const EvaluateRequest& request);
+  EvaluateResponse evaluateHover(const EvaluateRequest& request);
 
  private:
   bool stop_on_entry_ = false;

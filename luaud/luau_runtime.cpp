@@ -1,5 +1,6 @@
 #include <Luau/Common.h>
 #include <lualib.h>
+#include <format>
 #include <string>
 
 #include <Luau/Compiler.h>
@@ -116,7 +117,7 @@ namespace luau {
 Runtime::Runtime() {
   Luau::assertHandler() = [](const char* expr, const char* file, int line,
                              const char* function) {
-    printf("%s(%d): ASSERTION FAILED: %s\n", file, line, expr);
+    error(std::format("{}({}): ASSERTION FAILED: {}\n", file, line, expr));
     return 1;
   };
   vm_ = luaL_newstate();
@@ -151,7 +152,7 @@ void Runtime::installLibrary() {
 bool Runtime::runFile(const char* name) {
   std::optional<std::string> source = file_utils::readFile(name);
   if (!source) {
-    fprintf(stderr, "Error opening %s\n", name);
+    error(std::format("Error opening {}\n", name));
     return false;
   }
 
@@ -172,18 +173,17 @@ bool Runtime::runFile(const char* name) {
   }
 
   if (status != 0) {
-    std::string error;
+    std::string msg;
 
-    if (status == LUA_YIELD) {
-      error = "thread yielded unexpectedly";
-    } else if (const char* str = lua_tostring(L, -1)) {
-      error = str;
-    }
+    if (status == LUA_YIELD)
+      msg = "thread yielded unexpectedly";
+    else if (const char* str = lua_tostring(L, -1))
+      msg = str;
 
-    error += "\nstacktrace:\n";
-    error += lua_debugtrace(L);
+    msg += "\nstacktrace:\n";
+    msg += lua_debugtrace(L);
 
-    fprintf(stderr, "%s", error.c_str());
+    error(msg);
   }
 
   lua_pop(vm_, 1);

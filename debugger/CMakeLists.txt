@@ -26,8 +26,9 @@ target_compile_features(${library_name} PRIVATE cxx_std_20)
 
 add_dependencies(${library_name} Luau.VM Luau.Compiler)
 target_include_directories(${library_name} PRIVATE
+  ${LUAU_ROOT}/AST/include
+  ${LUAU_ROOT}/Common/include
+  ${LUAU_ROOT}/Compiler/include
   ${LUAU_ROOT}/VM/include
   ${LUAU_ROOT}/VM/src
-  ${LUAU_ROOT}/Compiler/include
-  ${LUAU_ROOT}/Common/include
 )

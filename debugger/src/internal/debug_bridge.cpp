@@ -18,6 +18,7 @@
 
 #include "debugger.h"
 #include "log.h"
+#include "utils.h"
 #include "variable.h"
 
 namespace luau::debugger {
@@ -368,6 +369,56 @@ void DebugBridge::resumeInternal() {
   DEBUGGER_LOG_INFO("[resume] Resume execution");
   resume_ = true;
   resume_cv_.notify_one();
+}
+
+ResponseOrError<EvaluateResponse> DebugBridge::evaluate(
+    const EvaluateRequest& request) {
+  if (!isDebugBreak()) {
+    // TODO: support evaluate when not in debug break
+    return Error{"Evaluate request is not allowed when not in debug break"};
+  }
+
+  if (!request.context.has_value())
+    return Error{"Evaluate request must have context"};
+
+  auto context = request.context.value();
+  DEBUGGER_LOG_INFO("[evaluate] Evaluate context: {}", context);
+
+  if (context == "repl")
+    return evaluateRepl(request);
+  else if (context == "watch")
+    return evaluateWatch(request);
+  else {
+    DEBUGGER_LOG_ERROR("[evaluate] Invalid evaluate context: {}", context);
+    return Error{"Invalid evaluate context"};
+  }
+}
+
+EvaluateResponse DebugBridge::evaluateRepl(const EvaluateRequest& request) {
+  int ret = lua_utils::doString(break_vm_, request.expression);
+  std::string result;
+  for (int i = 1; i <= ret; ++i) {
+    result += lua_utils::getDisplayValue(break_vm_, -i);
+    if (i != ret)
+      result += "\n";
+    lua_pop(break_vm_, 1);
+  }
+  EvaluateResponse response{.result = result};
+  return response;
+}
+
+EvaluateResponse DebugBridge::evaluateWatch(const EvaluateRequest& request) {
+  // TODO:
+  EvaluateResponse response;
+  response.result = "Not implemented";
+  return response;
+}
+
+EvaluateResponse DebugBridge::evaluateHover(const EvaluateRequest& request) {
+  // TODO:
+  EvaluateResponse response;
+  response.result = "Not implemented";
+  return response;
 }
 
 }  // namespace luau::debugger

@@ -51,6 +51,7 @@ bool Debugger::listen(int port) {
 bool Debugger::stop() {
   closeSession();
   server_->stop();
+  debug_bridge_.reset();
 
   DEBUGGER_LOG_INFO("Debugger stopped");
   return true;
@@ -236,6 +237,15 @@ void Debugger::registerStepOutHandler() {
     DEBUGGER_LOG_INFO("Server received stepOut request from client");
     debug_bridge_->stepOut();
     return dap::StepOutResponse{};
+  });
+}
+
+void Debugger::registerEvaluateHandler() {
+  session_->registerHandler([&](const dap::EvaluateRequest& request)
+                                -> dap::ResponseOrError<dap::EvaluateResponse> {
+    DEBUGGER_LOG_INFO("Server received evaluate request from client: {}",
+                      debugger::utils::toString(request));
+    return debug_bridge_->evaluate(request);
   });
 }
 

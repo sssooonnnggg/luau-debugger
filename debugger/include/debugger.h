@@ -38,6 +38,7 @@ class DebugBridge;
   HANDLER(Next)                    \
   HANDLER(StepIn)                  \
   HANDLER(StepOut)                 \
+  HANDLER(Evaluate)                \
   HANDLER(Disconnect)
 
 class Debugger {

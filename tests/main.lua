@@ -6,7 +6,7 @@ local function main()
         local foo_number = 2
         local foo_string = "def"
     
-        local function bar()
+        local function bar(a, b)
             local bar_nil
             local bar_boolean = true
             local bar_number = 1
@@ -45,7 +45,7 @@ local function main()
             print(foo_string)
         end
     
-        bar()
+        bar(500, 600)
     end
 
     foo()
@@ -72,6 +72,17 @@ end
 
 test_step()
 
-while true do
-    main()
+local function test_loadstring()
+  local a = 1
+  local f = loadstring("print('loadstring==================', a)")
+  local r, msg = pcall(f)
+  if r == false then
+    print('===========================', msg)
+  end
 end
+
+test_loadstring()
+
+-- while true do
+--     main()
+-- end
