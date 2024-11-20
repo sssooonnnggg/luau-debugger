@@ -21,6 +21,7 @@ namespace luau::debugger {
 struct BreakContext {
   std::string source_;
   int line_ = 0;
+  int depth_ = 0;
   bool operator<=>(const BreakContext&) const = default;
 };
 

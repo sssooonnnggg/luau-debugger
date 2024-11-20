@@ -53,6 +53,25 @@ end
 
 require("./a/a")()
 
+local function foo()
+  local a = 1
+  local b = 2
+end
+
+local function bar()
+  local c = 3
+  local d = 4
+end
+
+local function test_step()
+  foo()
+  bar()
+  foo()
+  bar()
+end
+
+test_step()
+
 while true do
     main()
 end

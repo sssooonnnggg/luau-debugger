@@ -267,10 +267,12 @@ std::string DebugBridge::normalizePath(std::string_view path) const {
 }
 
 BreakContext DebugBridge::getBreakContext(lua_State* L) const {
+  int depth = lua_stackdepth(L);
   lua_Debug ar;
   lua_getinfo(L, 0, "sl", &ar);
   return BreakContext{.source_ = normalizePath(ar.source),
-                      .line_ = ar.currentline};
+                      .line_ = ar.currentline,
+                      .depth_ = depth};
 }
 
 bool DebugBridge::isBreakOnEntry(lua_State* L) const {
@@ -320,16 +322,23 @@ void DebugBridge::stepIn() {
 }
 
 void DebugBridge::stepOut() {
-  // TODO:
   DEBUGGER_ASSERT(isDebugBreak());
-  processSingleStep([](lua_State* L, lua_Debug* ar) -> bool { return true; });
+  auto old_ctx = getBreakContext(break_vm_);
+  processSingleStep([this, old_ctx](lua_State* L, lua_Debug* ar) -> bool {
+    auto ctx = getBreakContext(L);
+    return ctx.depth_ < old_ctx.depth_;
+  });
   resumeInternal();
 }
 
 void DebugBridge::stepOver() {
-  // TODO:
   DEBUGGER_ASSERT(isDebugBreak());
-  processSingleStep([](lua_State* L, lua_Debug* ar) -> bool { return true; });
+  auto old_ctx = getBreakContext(break_vm_);
+  processSingleStep([this, old_ctx](lua_State* L, lua_Debug* ar) -> bool {
+    auto ctx = getBreakContext(L);
+    return (ctx.depth_ == old_ctx.depth_ && ctx.line_ != old_ctx.line_) ||
+           ctx.depth_ < old_ctx.depth_;
+  });
   resumeInternal();
 }
 

@@ -26,13 +26,15 @@ A debugger for Luau with debug adapter protocol(DAP) support.
 - Clone `cppdap` and `luau` repository to local
 - Set `CPP_DAP_ROOT` and `LUAU_ROOT` in `CMakePresets.json`
 - Build using CMake Presets by CLI
-  - `cmake -S . -B build --preset Windows-clang-debug`
-  - `cmake --build --preset DebugBuild`
+  - `cmake -S . -B build --preset <configure preset>`
+  - `cmake --build --preset <build preset>`
 - Or use other IDE such as VSCode or Visual Studio
 
 ## TODO
 
 - [ ] Debugger features
+  - [x] Attach
+  - [ ] Launch
   - [x] Stop on entry
   - [x] Breakpoints
     - [x] Add break points when running (Considering thread safety)
@@ -40,7 +42,7 @@ A debugger for Luau with debug adapter protocol(DAP) support.
   - [ ] Force break
   - [x] StackTrace
   - [x] Scopes
-  - [x] Get Variables
+  - [x] Get variables
     - [x] Locals
     - [x] Upvalues
   - [ ] Display variables
@@ -54,14 +56,14 @@ A debugger for Luau with debug adapter protocol(DAP) support.
     - [x] vector
     - [x] function
     - [ ] userdata
-  - [ ] Set Variable
+  - [ ] Set variables
   - [ ] Evaluate
   - [ ] Watch
-  - [ ] Single Step
-    - [ ] StepIn
-    - [ ] StepOver
-    - [ ] StepOut
-  - [ ] Disconnect and reconnect
+  - [x] Single step
+    - [x] Step in
+    - [x] Step over
+    - [x] Step out
+  - [x] Disconnect and reconnect
   - [ ] Log
   - [ ] Coroutine
 
