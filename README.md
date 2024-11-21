@@ -16,20 +16,6 @@ A debugger for Luau with debug adapter protocol(DAP) support.
   └── tests       # Tests with lua scripts
 ```
 
-## Dependencies
-
-- luau
-- cppdap
-  - C++ DAP(Debug Adapter Protocol) library, help to simplify the implementation of a DAP server
-
-## Build
-- Clone `cppdap` and `luau` repository to local
-- Set `CPP_DAP_ROOT` and `LUAU_ROOT` in `CMakePresets.json`
-- Build using CMake Presets by CLI
-  - `cmake -S . -B build --preset <configure preset>`
-  - `cmake --build --preset <build preset>`
-- Or use other IDE such as VSCode or Visual Studio
-
 ## Usage
 - Download or build `luaud` executable
 - Install `luau-debugger` extension
@@ -52,7 +38,23 @@ A debugger for Luau with debug adapter protocol(DAP) support.
   ```bash
   luaud 58000 <script>
   ```
-- Press `F5` to start debugging
+- Press `F5` to start debugging, enjoy!
+
+  ![](extensions/vscode/docs/demo.gif)
+
+## Dependencies
+
+- luau
+- cppdap
+  - C++ DAP(Debug Adapter Protocol) library, help to simplify the implementation of a DAP server
+
+## Build
+- Clone `cppdap` and `luau` repository to local
+- Set `CPP_DAP_ROOT` and `LUAU_ROOT` in `CMakePresets.json`
+- Build using CMake Presets by CLI
+  - `cmake -S . -B build --preset <configure preset>`
+  - `cmake --build --preset <build preset>`
+- Or use other IDE such as VSCode or Visual Studio
 
 ## Features
 

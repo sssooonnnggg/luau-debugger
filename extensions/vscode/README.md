@@ -2,37 +2,11 @@
 
 A debugger for Luau with debug adapter protocol(DAP) support.
 
-## Overview
-
-```bash
-└── luau_debugger
-  |
-  ├── debugger    # Debugger implementation, include a DAP server and
-  |               # a debugger implemented with luau internal debug
-  |               # api directly without hooking
-  |
-  ├── luaud       # A Luau executable with debugger support, for testing purpose
-  ├── extensions  # VSCode extension for Luau debugger
-  └── tests       # Tests with lua scripts
-```
-
-## Dependencies
-
-- luau
-- cppdap
-  - C++ DAP(Debug Adapter Protocol) library, help to simplify the implementation of a DAP server
-
-## Build
-- Clone `cppdap` and `luau` repository to local
-- Set `CPP_DAP_ROOT` and `LUAU_ROOT` in `CMakePresets.json`
-- Build using CMake Presets by CLI
-  - `cmake -S . -B build --preset <configure preset>`
-  - `cmake --build --preset <build preset>`
-- Or use other IDE such as VSCode or Visual Studio
-
 ## Usage
-- Download or build `luaud` executable
-- Install `luau-debugger` extension
+- Get a `luaud` executable
+  - Download from [release](https://github.com/sssooonnnggg/luau-debugger/releases/download/v1.0.14/luaud.zip)
+  - Or build from [source](https://github.com/sssooonnnggg/luau-debugger)
+- Install `luau-debugger` [extension](https://marketplace.visualstudio.com/items?itemName=sssooonnnggg.luau-debugger)
 - Open lua folders in VSCode
 - Add a launch configuration in `launch.json`
   ```json
@@ -48,11 +22,13 @@ A debugger for Luau with debug adapter protocol(DAP) support.
     ]
   }
   ```
-- Using `luaud` to execute lua script with debug support
+- Using `luaud` to execute lua script with debug support, the first argument is the port number, the second argument is the path to the lua script you want to debug
   ```bash
-  luaud 58000 <script>
+  luaud 58000 D:/my_lua_projects/hello_world.lua
   ```
-- Press `F5` to start debugging
+- Press `F5` to start debugging, enjoy!
+
+  ![](docs/demo.gif)
 
 ## Features
 
