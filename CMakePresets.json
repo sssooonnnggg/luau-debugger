@@ -23,9 +23,12 @@
     {
       "name": "publish-configure",
       "displayName": "publish-configure",
-      "inherits": "windows-clang-release",
-      "toolchainFile": "",
-      "generator": "Visual Studio 17 2022"
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CPPDAP_BUILD_EXAMPLES": "ON",
+        "LUAU_BUILD_TESTS": "OFF"
+      }
     }
   ],
   "buildPresets": [
