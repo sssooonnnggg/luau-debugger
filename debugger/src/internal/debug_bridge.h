@@ -114,9 +114,15 @@ class DebugBridge {
 
   void resumeInternal();
 
-  EvaluateResponse evaluateRepl(const EvaluateRequest& request);
-  EvaluateResponse evaluateWatch(const EvaluateRequest& request);
-  EvaluateResponse evaluateHover(const EvaluateRequest& request);
+  ResponseOrError<EvaluateResponse> evaluateRepl(
+      const EvaluateRequest& request);
+  ResponseOrError<EvaluateResponse> evaluateWatch(
+      const EvaluateRequest& request);
+  ResponseOrError<EvaluateResponse> evaluateHover(
+      const EvaluateRequest& request);
+
+  ResponseOrError<EvaluateResponse> evalWithEnv(const EvaluateRequest& request);
+  bool pushBreakEnv(int level);
 
  private:
   bool stop_on_entry_ = false;

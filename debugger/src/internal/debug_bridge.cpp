@@ -394,8 +394,31 @@ ResponseOrError<EvaluateResponse> DebugBridge::evaluate(
   }
 }
 
-EvaluateResponse DebugBridge::evaluateRepl(const EvaluateRequest& request) {
-  int ret = lua_utils::doString(break_vm_, request.expression);
+ResponseOrError<EvaluateResponse> DebugBridge::evaluateRepl(
+    const EvaluateRequest& request) {
+  return evalWithEnv(request);
+}
+
+ResponseOrError<EvaluateResponse> DebugBridge::evaluateWatch(
+    const EvaluateRequest& request) {
+  return evalWithEnv(request);
+}
+
+ResponseOrError<EvaluateResponse> DebugBridge::evaluateHover(
+    const EvaluateRequest& request) {
+  return evalWithEnv(request);
+}
+
+ResponseOrError<EvaluateResponse> DebugBridge::evalWithEnv(
+    const EvaluateRequest& request) {
+  int level = 0;
+  if (request.frameId.has_value())
+    level = request.frameId.value();
+
+  if (!pushBreakEnv(level))
+    return Error{"Failed to push break environment"};
+
+  int ret = lua_utils::doString(break_vm_, request.expression, -1);
   std::string result;
   for (int i = 1; i <= ret; ++i) {
     result += lua_utils::getDisplayValue(break_vm_, -i);
@@ -403,22 +426,72 @@ EvaluateResponse DebugBridge::evaluateRepl(const EvaluateRequest& request) {
       result += "\n";
     lua_pop(break_vm_, 1);
   }
+
+  // Pop the environment
+  lua_pop(break_vm_, 1);
+
   EvaluateResponse response{.result = result};
   return response;
 }
 
-EvaluateResponse DebugBridge::evaluateWatch(const EvaluateRequest& request) {
-  // TODO:
-  EvaluateResponse response;
-  response.result = "Not implemented";
-  return response;
-}
+bool DebugBridge::pushBreakEnv(int level) {
+  lua_Debug ar;
+  lua_checkstack(break_vm_, 5);
 
-EvaluateResponse DebugBridge::evaluateHover(const EvaluateRequest& request) {
-  // TODO:
-  EvaluateResponse response;
-  response.result = "Not implemented";
-  return response;
+  // Create new table for break environment
+  lua_newtable(break_vm_);
+
+  // Push function at level
+  if (!lua_getinfo(break_vm_, level, "f", &ar)) {
+    DEBUGGER_LOG_ERROR("[pushBreakEnv] Failed to get function info at level {}",
+                       level);
+    lua_pop(break_vm_, 1);
+    return false;
+  }
+
+  // Get function env
+  lua_getfenv(break_vm_, -1);
+
+  // Copy function env to break env
+  // -1: function env table
+  // -2: function
+  // -3: break env table
+  int break_env = lua_absindex(break_vm_, -3);
+  lua_pushnil(break_vm_);
+  while (lua_next(break_vm_, -2)) {
+    lua_pushvalue(break_vm_, -2);
+    lua_pushvalue(break_vm_, -2);
+    lua_settable(break_vm_, break_env);
+    lua_pop(break_vm_, 1);
+  }
+  lua_pop(break_vm_, 1);
+
+  // -1: function
+  // -2: table
+
+  int index = 1;
+  while (auto* name = lua_getlocal(break_vm_, level, index++)) {
+    lua_pushstring(break_vm_, name);
+    lua_insert(break_vm_, -2);
+
+    // -1: value
+    // -2: key
+    // -3: function
+    // -4: table
+    lua_rawset(break_vm_, -4);
+  }
+
+  index = 1;
+  while (auto* name = lua_getupvalue(break_vm_, -1, index++)) {
+    lua_pushstring(break_vm_, name);
+    lua_insert(break_vm_, -2);
+    lua_rawset(break_vm_, -4);
+  }
+
+  // Pop function
+  lua_pop(break_vm_, 1);
+
+  return true;
 }
 
 }  // namespace luau::debugger

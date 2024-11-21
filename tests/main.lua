@@ -83,6 +83,6 @@ end
 
 test_loadstring()
 
--- while true do
---     main()
--- end
+while true do
+    main()
+end
