@@ -30,6 +30,7 @@ jobs:
         with:
           repository: luau-lang/luau
           path: luau
+          ref: 53e6e4b8f0b74e8770c41ff9bf7165ecfa9da1e2
       - name: install compiler
         run: |
           choco install ninja
