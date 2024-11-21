@@ -14,7 +14,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        run: echo "root=${{GITHUB_WORKSPACE}}" >> $GITHUB_OUTPUT
       - name: Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
@@ -29,7 +28,7 @@ jobs:
           repository: luau-lang/luau
           path: luau
       - name: configure
-        run: cmake -DCPP_DAP_ROOT=${{ steps.vars.outputs.root }}/cppdap -DLUAU_ROOT=${{ steps.vars.outputs.root }}/luau -S . -B build --preset publish-configure
+        run: cmake -DCPP_DAP_ROOT=${{ github.workspace }}/cppdap -DLUAU_ROOT=${{ github.workspace }}/luau -S . -B build --preset publish-configure
       - name: build
         run: cmake --build --preset publish-build
       - name: pack
