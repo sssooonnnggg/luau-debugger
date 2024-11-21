@@ -82,7 +82,7 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "copy ..\\..\\README.md README.md && npm run compile",
+    "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./"
   },
