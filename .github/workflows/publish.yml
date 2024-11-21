@@ -28,7 +28,7 @@ jobs:
           repository: luau-lang/luau
           path: luau
       - name: configure
-        run: cmake -DCPP_DAP_ROOT=${GITHUB_WORKSPACE}/cppdap -DLUAU_ROOT=${GITHUB_WORKSPACE}/luau -S . -B build --preset publish-configure
+        run: cmake -DCPP_DAP_ROOT=${{GITHUB_WORKSPACE}}/cppdap -DLUAU_ROOT=${{GITHUB_WORKSPACE}}/luau -S . -B build --preset publish-configure
       - name: build
         run: cmake --build --preset publish-build
       - name: pack
