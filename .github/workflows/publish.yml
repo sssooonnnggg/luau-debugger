@@ -40,7 +40,7 @@ jobs:
       - name: build
         run: cmake --build --preset publish-build
       - name: pack
-        run: 7z a luaud.zip ${{ github.workspace }}\build\luaud\luau.exe
+        run: 7z a luaud.zip ${{ github.workspace }}\build\luaud\luaud.exe
       - uses: softprops/action-gh-release@v2
         with:
           files: luaud.zip
