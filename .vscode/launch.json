@@ -14,7 +14,6 @@
         "${workspaceRoot}/tests/main.lua"
       ],
       "stopAtEntry": false,
-      "cwd": "${fileDirname}",
       "environment": [],
       // "console": "externalTerminal",
       "preLaunchTask": "CMake: build"
@@ -29,7 +28,6 @@
         "${workspaceRoot}/tests/main.lua"
       ],
       "stopAtEntry": false,
-      "cwd": "${fileDirname}",
       "environment": [],
       // "console": "externalTerminal"
     }

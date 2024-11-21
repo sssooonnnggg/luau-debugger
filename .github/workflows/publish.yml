@@ -1,0 +1,38 @@
+name: Publish
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  create-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+      - name: Checkout cppdap
+        uses: actions/checkout@v4
+        with:
+          repository: google/cppdap
+          path: cppdap
+      - name: Checkout luau
+        uses: actions/checkout@v4
+        with:
+          repository: luau-lang/luau
+          path: luau
+      - name: configure
+        run: cmake -DCPP_DAP_ROOT=./cppdap -DLUAU_ROOT=./luau -S . -B build --preset publish-configure
+      - name: build
+        run: cmake --build --preset publish-build
+      - name: pack
+        run: 7z a luaud.zip .\build\luaud\luau.exe
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: luaud.zip

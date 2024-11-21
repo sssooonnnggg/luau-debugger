@@ -2,8 +2,8 @@
   "version": 8,
   "configurePresets": [
     {
-      "name": "Windows-clang-debug",
-      "displayName": "Windows-clang-debug",
+      "name": "windows-clang-debug",
+      "displayName": "windows-clang-debug",
       "generator": "Ninja",
       "toolchainFile": "${sourceDir}/cmake/toolchains/windows-clang.cmake",
       "binaryDir": "${sourceDir}/build",
@@ -15,23 +15,36 @@
       }
     },
     {
-      "name": "Windows-clang-release",
-      "displayName": "Windows-clang-release",
-      "inherits": "Windows-clang-debug",
+      "name": "windows-clang-release",
+      "displayName": "windows-clang-release",
+      "inherits": "windows-clang-debug",
       "binaryDir": "${sourceDir}/build"
+    },
+    {
+      "name": "publish-configure",
+      "displayName": "publish-configure",
+      "inherits": "Windows-clang-release",
+      "toolchainFile": "",
+      "generator": "Visual Studio 17 2022"
     }
   ],
   "buildPresets": [
     {
-      "name": "DebugBuild",
-      "displayName": "Debug",
+      "name": "debug-build",
+      "displayName": "debug-build",
       "configurePreset": "Windows-clang-debug",
       "configuration": "Debug"
     },
     {
-      "name": "ReleaseBuild",
-      "displayName": "Release",
+      "name": "release-build",
+      "displayName": "release-build",
       "configurePreset": "Windows-clang-release",
+      "configuration": "RelWithDebInfo"
+    },
+    {
+      "name": "publish-build",
+      "displayName": "publish-build",
+      "configurePreset": "publish-build",
       "configuration": "RelWithDebInfo"
     }
   ]
