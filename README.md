@@ -30,7 +30,31 @@ A debugger for Luau with debug adapter protocol(DAP) support.
   - `cmake --build --preset <build preset>`
 - Or use other IDE such as VSCode or Visual Studio
 
-## TODO
+## Usage
+
+- Install `luau-debugger` extension
+- Open lua folders in VSCode
+- Add a launch configuration in `launch.json`
+  ```json
+  {
+    "configurations": [
+      {
+        "type": "luau",
+        "request": "attach",
+        "name": "attach to luau debugger",
+        "address": "localhost",
+        "port": 58000
+      }
+    ]
+  }
+  ```
+- Using `luaud` to execute lua script with debug support
+  ```bash
+  luaud 58000 <script>
+  ```
+- Press `F5` to start debugging
+
+## Features
 
 - [ ] Debugger features
   - [x] Attach
@@ -58,8 +82,8 @@ A debugger for Luau with debug adapter protocol(DAP) support.
     - [ ] userdata
   - [ ] Set variables
   - [x] Repl
-  - [ ] Watch
-  - [ ] Hover
+  - [x] Watch
+  - [x] Hover
   - [x] Single step
     - [x] Step in
     - [x] Step over
