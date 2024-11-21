@@ -23,7 +23,7 @@
     {
       "name": "publish-configure",
       "displayName": "publish-configure",
-      "inherits": "Windows-clang-release",
+      "inherits": "windows-clang-release",
       "toolchainFile": "",
       "generator": "Visual Studio 17 2022"
     }
@@ -32,19 +32,19 @@
     {
       "name": "debug-build",
       "displayName": "debug-build",
-      "configurePreset": "Windows-clang-debug",
+      "configurePreset": "windows-clang-debug",
       "configuration": "Debug"
     },
     {
       "name": "release-build",
       "displayName": "release-build",
-      "configurePreset": "Windows-clang-release",
+      "configurePreset": "windows-clang-release",
       "configuration": "RelWithDebInfo"
     },
     {
       "name": "publish-build",
       "displayName": "publish-build",
-      "configurePreset": "publish-build",
+      "configurePreset": "publish-configure",
       "configuration": "RelWithDebInfo"
     }
   ]
