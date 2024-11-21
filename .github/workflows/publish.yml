@@ -22,6 +22,9 @@ jobs:
         with:
           repository: google/cppdap
           path: cppdap
+      - name: init cppdap submodules
+        working-directory: ./cppdap
+        run: git submodule update --init
       - name: Checkout luau
         uses: actions/checkout@v4
         with:
