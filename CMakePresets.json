@@ -23,11 +23,14 @@
     {
       "name": "publish-configure",
       "displayName": "publish-configure",
-      "generator": "Visual Studio 17 2022",
+      "generator": "Ninja",
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CPPDAP_BUILD_EXAMPLES": "ON",
-        "LUAU_BUILD_TESTS": "OFF"
+        "LUAU_BUILD_TESTS": "OFF",
+        "CMAKE_CXX_COMPILER": "clang++.exe",
+        "CMAKE_C_COMPILER": "clang.exe",
+        "CMAKE_RC_COMPILER": "llvm-rc.exe"
       }
     }
   ],

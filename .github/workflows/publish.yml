@@ -30,6 +30,10 @@ jobs:
         with:
           repository: luau-lang/luau
           path: luau
+      - name: install compiler
+        run: |
+          choco install ninja
+          choco install llvm
       - name: configure
         run: cmake -DCPP_DAP_ROOT=${{ github.workspace }}/cppdap -DLUAU_ROOT=${{ github.workspace }}/luau -S . -B build --preset publish-configure
       - name: build
