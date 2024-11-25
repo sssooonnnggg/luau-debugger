@@ -1,6 +1,13 @@
 {
   "configurations": [
     {
+        "type": "luau",
+        "request": "launch",
+        "name": "launch luau debugger",
+        "program": "${workspaceFolder}/main.lua",
+        "port": 58000
+    },
+    {
       "type": "luau",
       "request": "attach",
       "name": "attach to luau debugger",

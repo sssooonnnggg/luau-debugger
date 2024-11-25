@@ -11,7 +11,7 @@ A debugger for Luau with debug adapter protocol(DAP) support.
   |               # a debugger implemented with luau internal debug
   |               # api directly without hooking
   |
-  ├── luaud       # A Luau executable with debugger support, for testing purpose
+  ├── luaud       # A minimal Luau executable with debug support
   ├── extensions  # VSCode extension for Luau debugger
   └── tests       # Tests with lua scripts
 ```
@@ -60,7 +60,7 @@ A debugger for Luau with debug adapter protocol(DAP) support.
 
 - [ ] Debugger features
   - [x] Attach
-  - [ ] Launch
+  - [x] Launch
   - [x] Stop on entry
   - [x] Breakpoints
     - [x] Add break points when running (Considering thread safety)

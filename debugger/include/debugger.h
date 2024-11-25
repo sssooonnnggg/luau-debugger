@@ -27,6 +27,7 @@ class DebugBridge;
 //    `void Debugger::register{Protocol}Handler()`
 #define DAP_HANDLERS(HANDLER)      \
   HANDLER(Initialize)              \
+  HANDLER(Launch)                  \
   HANDLER(Attach)                  \
   HANDLER(SetExceptionBreakpoints) \
   HANDLER(SetBreakpoints)          \
@@ -42,6 +43,10 @@ class DebugBridge;
   HANDLER(Evaluate)                \
   HANDLER(Disconnect)
 
+enum class DebugSession {
+  Launch,
+  Attach,
+};
 class Debugger {
  public:
   Debugger(bool stop_on_entry);
@@ -75,6 +80,8 @@ class Debugger {
   std::unique_ptr<dap::Session> session_;
 
   std::unique_ptr<DebugBridge> debug_bridge_;
+
+  DebugSession session_type_ = DebugSession::Attach;
 };
 
 }  // namespace luau::debugger

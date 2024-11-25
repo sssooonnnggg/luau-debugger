@@ -14,6 +14,10 @@ void printToDebugConsole(std::string_view msg) {
 }
 
 int main(int argc, char** argv) {
+  // Disable buffering for stdout and stderr
+  setvbuf(stdout, NULL, _IONBF, 0);
+  setvbuf(stderr, NULL, _IONBF, 0);
+
   if (argc != 3) {
     printf("Usage: %s [DEBUGGER_PORT] [FILE_PATH]\n", argv[0]);
     return -1;

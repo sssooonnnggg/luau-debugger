@@ -4,6 +4,7 @@
 #include <dap/session.h>
 
 #include <atomic>
+#include <cstdlib>
 #include <memory>
 #include <mutex>
 #include <utility>
@@ -84,8 +85,9 @@ void Debugger::registerDisconnectHandler() {
     return dap::DisconnectResponse{};
   });
   session_->registerSentHandler(
-      [&](const dap::ResponseOrError<dap::DisconnectRequest>&) {
-        closeSession();
+      [&](const dap::ResponseOrError<dap::DisconnectResponse>&) {
+        if (session_type_ == DebugSession::Launch)
+          std::exit(0);
       });
 }
 
@@ -135,7 +137,19 @@ void Debugger::registerAttachHandler() {
                                 -> dap::ResponseOrError<dap::AttachResponse> {
     DEBUGGER_LOG_INFO("Server received attach request from client: {}",
                       dap_utils::toString(request));
+    session_type_ = DebugSession::Attach;
     dap::AttachResponse response;
+    return response;
+  });
+}
+
+void Debugger::registerLaunchHandler() {
+  session_->registerHandler([&](const dap::LaunchRequest& request)
+                                -> dap::ResponseOrError<dap::LaunchResponse> {
+    DEBUGGER_LOG_INFO("Server received launch request from client: {}",
+                      dap_utils::toString(request));
+    session_type_ = DebugSession::Launch;
+    dap::LaunchResponse response;
     return response;
   });
 }
