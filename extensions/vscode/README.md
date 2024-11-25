@@ -2,11 +2,37 @@
 
 A debugger for Luau with debug adapter protocol(DAP) support.
 
+![](docs/demo.gif)
+
 ## Usage
-- Get a `luaud` executable
-  - Download from [release](https://github.com/sssooonnnggg/luau-debugger/releases)
-  - Or build from [source](https://github.com/sssooonnnggg/luau-debugger)
+
 - Install `luau-debugger` [extension](https://marketplace.visualstudio.com/items?itemName=sssooonnnggg.luau-debugger)
+- There are three ways to use this extension:
+  - **Launch**: Directly run the debugger installed with the extension.
+  - **Attach**: Attach to the luau runtime running externally.
+  - **Advance**: Integrate `luau-debugger` into your own project.
+
+### Launch
+- Add a launch configuration in `launch.json`
+  ```json
+  {
+    "configurations": [
+      {
+        "type": "luau",
+        "request": "launch",
+        "name": "launch luau debugger",
+        "program": "${workspaceFolder}/main.lua",
+        "port": 58000
+      },
+    ]
+  }
+  ```
+  - `program`: The path to the lua script you want to debug
+  - `port`: The port number to communicate with the debugger
+- Press `F5` to start debugging, enjoy!
+
+### Attach
+- Get a `luaud` executable from [release](https://github.com/sssooonnnggg/luau-debugger/releases) which a luau runtime with debug support
 - Open lua folders in VSCode
 - Add a launch configuration in `launch.json`
   ```json
@@ -22,26 +48,31 @@ A debugger for Luau with debug adapter protocol(DAP) support.
     ]
   }
   ```
-- Using `luaud` to execute lua script with debug support, the first argument is the port number, the second argument is the path to the lua script you want to debug
+- Using `luaud [PORT] [LUA_ENTRY]` to execute lua script with debug support:
   ```bash
   luaud 58000 D:/my_lua_projects/hello_world.lua
   ```
 - Press `F5` to start debugging, enjoy!
 
-  ![](docs/demo.gif)
+### Integrate with luau-debugger in your project
+- [Build luau-debugger from source](https://github.com/sssooonnnggg/luau-debugger#build)
+- Use the interface provided by `luau-debugger` library.
+  - You can refer to the implementation of `luaud` which is a minimal luau runtime integrated with `luau-debugger`.
+- Run your project and debug the luau code using a configuration similar to `Attach`.
 
 ## Features
 
 - [ ] Debugger features
   - [x] Attach
-  - [ ] Launch
+  - [x] Launch
   - [x] Stop on entry
   - [x] Breakpoints
     - [x] Add break points when running (Considering thread safety)
   - [x] Continue
   - [ ] Force break
   - [x] StackTrace
-    - [ ] StackTrace support coroutine
+    - [ ] StackTrace support chaining coroutine
+    - [ ] Support switching stacktrace between different coroutines
   - [x] Scopes
   - [x] Get variables
     - [x] Locals
