@@ -1,9 +1,9 @@
 {
   "name": "luau-debugger",
-  "displayName": "A Luau Debugger",
-  "version": "0.0.4",
+  "displayName": "Luau Debugger",
+  "version": "0.0.5",
   "publisher": "sssooonnnggg",
-  "description": "A Luau debugger",
+  "description": "Luau debugger",
   "author": {
     "name": "sssooonnnggg"
   },
