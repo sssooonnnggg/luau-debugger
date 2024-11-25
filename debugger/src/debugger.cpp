@@ -113,12 +113,13 @@ void Debugger::onSessionError(const char* msg) {
 void Debugger::registerInitializeHandler() {
   session_->registerHandler([&](const dap::InitializeRequest& request) {
     DEBUGGER_LOG_INFO("Server received initialize request from client: {}",
-                      debugger::utils::toString(request));
+                      dap_utils::toString(request));
     dap::InitializeResponse response;
     response.supportsReadMemoryRequest = false;
     response.supportsDataBreakpoints = false;
     response.supportsExceptionOptions = false;
     response.supportsDelayedStackTraceLoading = false;
+    response.supportsSetVariable = true;
     return response;
   });
   session_->registerSentHandler(
@@ -133,7 +134,7 @@ void Debugger::registerAttachHandler() {
   session_->registerHandler([&](const dap::AttachRequest& request)
                                 -> dap::ResponseOrError<dap::AttachResponse> {
     DEBUGGER_LOG_INFO("Server received attach request from client: {}",
-                      debugger::utils::toString(request));
+                      dap_utils::toString(request));
     dap::AttachResponse response;
     return response;
   });
@@ -154,7 +155,7 @@ void Debugger::registerSetBreakpointsHandler() {
           -> dap::ResponseOrError<dap::SetBreakpointsResponse> {
         DEBUGGER_LOG_INFO(
             "Server received setBreakpoints request from client: {}",
-            debugger::utils::toString(request));
+            dap_utils::toString(request));
 
         auto file_path = request.source.path;
         if (!file_path.has_value())
@@ -192,7 +193,7 @@ void Debugger::registerStackTraceHandler() {
       [&](const dap::StackTraceRequest& request)
           -> dap::ResponseOrError<dap::StackTraceResponse> {
         DEBUGGER_LOG_INFO("Server received stackTrace request from client: {}",
-                          debugger::utils::toString(request));
+                          dap_utils::toString(request));
         return debug_bridge_->getStackTrace();
       });
 }
@@ -201,7 +202,7 @@ void Debugger::registerScopesHandler() {
   session_->registerHandler([&](const dap::ScopesRequest& request)
                                 -> dap::ResponseOrError<dap::ScopesResponse> {
     DEBUGGER_LOG_INFO("Server received scopes request from client: {}",
-                      debugger::utils::toString(request));
+                      dap_utils::toString(request));
     return debug_bridge_->getScopes(request.frameId);
   });
 }
@@ -211,8 +212,18 @@ void Debugger::registerVariablesHandler() {
       [&](const dap::VariablesRequest& request)
           -> dap::ResponseOrError<dap::VariablesResponse> {
         DEBUGGER_LOG_INFO("Server received variables request from client: {}",
-                          debugger::utils::toString(request));
+                          dap_utils::toString(request));
         return debug_bridge_->getVariables(request.variablesReference);
+      });
+}
+
+void Debugger::registerSetVariableHandler() {
+  session_->registerHandler(
+      [&](const dap::SetVariableRequest& request)
+          -> dap::ResponseOrError<dap::SetVariableResponse> {
+        DEBUGGER_LOG_INFO("Server received setVariable request from client: {}",
+                          dap_utils::toString(request));
+        return debug_bridge_->setVariable(request);
       });
 }
 
@@ -244,7 +255,7 @@ void Debugger::registerEvaluateHandler() {
   session_->registerHandler([&](const dap::EvaluateRequest& request)
                                 -> dap::ResponseOrError<dap::EvaluateResponse> {
     DEBUGGER_LOG_INFO("Server received evaluate request from client: {}",
-                      debugger::utils::toString(request));
+                      dap_utils::toString(request));
     return debug_bridge_->evaluate(request);
   });
 }

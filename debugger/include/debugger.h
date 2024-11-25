@@ -35,6 +35,7 @@ class DebugBridge;
   HANDLER(StackTrace)              \
   HANDLER(Scopes)                  \
   HANDLER(Variables)               \
+  HANDLER(SetVariable)             \
   HANDLER(Next)                    \
   HANDLER(StepIn)                  \
   HANDLER(StepOut)                 \

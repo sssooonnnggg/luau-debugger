@@ -10,16 +10,14 @@
 
 #include <dap/protocol.h>
 
-#include "breakpoint.h"
-#include "dap/session.h"
-#include "internal/debug_bridge.h"
-#include "internal/log.h"
-#include "internal/utils.h"
+#include <dap/session.h>
+#include <internal/breakpoint.h>
+#include <internal/debug_bridge.h>
+#include <internal/log.h>
+#include <internal/utils.h>
+#include <internal/variable.h>
 
-#include "debugger.h"
-#include "log.h"
-#include "utils.h"
-#include "variable.h"
+#include <debugger.h>
 
 namespace luau::debugger {
 
@@ -99,6 +97,8 @@ StackTraceResponse DebugBridge::getStackTrace() {
   std::scoped_lock lock(break_mutex_);
   lua_State* L = break_vm_;
 
+  variable_registry_.update(break_vm_);
+
   lua_Debug ar;
   for (int level = 0; lua_getinfo(L, level, "sln", &ar); ++level) {
     StackFrame frame;
@@ -115,69 +115,62 @@ StackTraceResponse DebugBridge::getStackTrace() {
   return response;
 }
 
-Scope DebugBridge::registerLocalVariables(lua_State* L, int level) {
-  Scope scope;
-  scope.expensive = false;
-  scope.name = "Local";
-  auto key = std::format("___locals__{}", level);
-  std::vector<Variable> variables;
-  int index = 1;
-  while (const char* name = lua_getlocal(L, level, index++)) {
-    variables.emplace_back(variable_registry_.createVariable(L, name));
-    lua_pop(L, 1);
-  }
-  auto [iter, _] =
-      variable_registry_.registerVariables(RegistryKey(key), variables);
-  scope.variablesReference = iter->first.key_;
-  return scope;
-}
-
-Scope DebugBridge::registerUpValues(lua_State* L, int level) {
-  Scope scope;
-  scope.expensive = false;
-  scope.name = "Upvalues";
-  auto key = std::format("___upvalues__{}", level);
-  lua_Debug ar = {};
-  lua_getinfo(L, level, "f", &ar);
-  std::vector<Variable> upvalues;
-  int index = 1;
-  while (const char* name = lua_getupvalue(L, -1, index++)) {
-    upvalues.emplace_back(variable_registry_.createVariable(L, name));
-    lua_pop(L, 1);
-  }
-  lua_pop(L, 1);
-  auto [iter, _] =
-      variable_registry_.registerVariables(RegistryKey(key), upvalues);
-  scope.variablesReference = iter->first.key_;
-  return scope;
-}
-
 ScopesResponse DebugBridge::getScopes(int level) {
   DEBUGGER_ASSERT(isDebugBreak());
-
-  lua_State* L = break_vm_;
-  variable_registry_.clear();
-
   ScopesResponse response;
 
-  response.scopes = {registerLocalVariables(L, level),
-                     registerUpValues(L, level)};
+  response.scopes = {
+      dap::Scope{.expensive = false,
+                 .name = "Local",
+                 .variablesReference =
+                     variable_registry_.getLocalScope(level).getKey()},
+      dap::Scope{.expensive = false,
+                 .name = "Upvalues",
+                 .variablesReference =
+                     variable_registry_.getUpvalueScope(level).getKey()}};
   return response;
 }
 
 VariablesResponse DebugBridge::getVariables(int reference) {
   DEBUGGER_ASSERT(isDebugBreak());
-  auto variables = variable_registry_.getVariables(reference);
-  if (!variables.has_value())
+  auto variables = variable_registry_.getVariables(Scope(reference));
+  if (variables == nullptr)
     return VariablesResponse{};
 
   VariablesResponse response;
-  for (const auto& variable : variables->get())
+  for (const auto& variable : (*variables))
     response.variables.emplace_back(
         dap::Variable{.name = std::string(variable.getName()),
                       .value = std::string(variable.getValue()),
-                      .variablesReference = variable.getKey()});
+                      .variablesReference = variable.getScope().getKey()});
   return response;
+}
+
+ResponseOrError<SetVariableResponse> DebugBridge::setVariable(
+    const SetVariableRequest& request) {
+  DEBUGGER_ASSERT(isDebugBreak());
+  auto result = variable_registry_.getVariables(request.variablesReference);
+  if (result == nullptr)
+    return Error{"Variable scope not found"};
+
+  auto& scope = result->first;
+  auto& variables = result->second;
+  auto it = std::find_if(variables.begin(), variables.end(),
+                         [&request](const auto& variable) {
+                           return variable.getName() == request.name;
+                         });
+  if (it == variables.end())
+    return Error{"Variable not found"};
+
+  std::string new_value;
+  try {
+    new_value = it->setValue(scope, request.value);
+  } catch (const std::exception& e) {
+    return Error{e.what()};
+  }
+
+  return SetVariableResponse{.value = new_value,
+                             .variablesReference = it->getScope().getKey()};
 }
 
 void DebugBridge::resume() {
@@ -415,83 +408,26 @@ ResponseOrError<EvaluateResponse> DebugBridge::evalWithEnv(
   if (request.frameId.has_value())
     level = request.frameId.value();
 
-  if (!pushBreakEnv(level))
+  if (!lua_utils::pushBreakEnv(break_vm_, level))
     return Error{"Failed to push break environment"};
 
-  int ret = lua_utils::doString(break_vm_, request.expression, -1);
+  int ret = lua_utils::eval(break_vm_, request.expression, -1).value_or(1);
   std::string result;
-  for (int i = 1; i <= ret; ++i) {
-    result += lua_utils::getDisplayValue(break_vm_, -i);
-    if (i != ret)
+  for (int i = ret; i >= 1; --i) {
+    result += lua_utils::toString(break_vm_, -i);
+    if (i != 1)
       result += "\n";
-    lua_pop(break_vm_, 1);
   }
+
+  // Pop result
+  if (ret > 0)
+    lua_pop(break_vm_, ret);
 
   // Pop the environment
   lua_pop(break_vm_, 1);
 
   EvaluateResponse response{.result = result};
   return response;
-}
-
-bool DebugBridge::pushBreakEnv(int level) {
-  lua_Debug ar;
-  lua_checkstack(break_vm_, 5);
-
-  // Create new table for break environment
-  lua_newtable(break_vm_);
-
-  // Push function at level
-  if (!lua_getinfo(break_vm_, level, "f", &ar)) {
-    DEBUGGER_LOG_ERROR("[pushBreakEnv] Failed to get function info at level {}",
-                       level);
-    lua_pop(break_vm_, 1);
-    return false;
-  }
-
-  // Get function env
-  lua_getfenv(break_vm_, -1);
-
-  // Copy function env to break env
-  // -1: function env table
-  // -2: function
-  // -3: break env table
-  int break_env = lua_absindex(break_vm_, -3);
-  lua_pushnil(break_vm_);
-  while (lua_next(break_vm_, -2)) {
-    lua_pushvalue(break_vm_, -2);
-    lua_pushvalue(break_vm_, -2);
-    lua_settable(break_vm_, break_env);
-    lua_pop(break_vm_, 1);
-  }
-  lua_pop(break_vm_, 1);
-
-  // -1: function
-  // -2: table
-
-  int index = 1;
-  while (auto* name = lua_getlocal(break_vm_, level, index++)) {
-    lua_pushstring(break_vm_, name);
-    lua_insert(break_vm_, -2);
-
-    // -1: value
-    // -2: key
-    // -3: function
-    // -4: table
-    lua_rawset(break_vm_, -4);
-  }
-
-  index = 1;
-  while (auto* name = lua_getupvalue(break_vm_, -1, index++)) {
-    lua_pushstring(break_vm_, name);
-    lua_insert(break_vm_, -2);
-    lua_rawset(break_vm_, -4);
-  }
-
-  // Pop function
-  lua_pop(break_vm_, 1);
-
-  return true;
 }
 
 }  // namespace luau::debugger

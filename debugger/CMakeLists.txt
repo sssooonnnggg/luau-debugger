@@ -9,6 +9,7 @@ target_sources(${library_name}
   src/internal/debug_bridge.cpp
   src/internal/variable.cpp
   src/internal/variable_registry.cpp
+  src/internal/utils/lua_utils.cpp
 )
 
 target_include_directories(${library_name} PRIVATE

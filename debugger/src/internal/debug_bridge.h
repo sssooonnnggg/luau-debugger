@@ -67,6 +67,10 @@ class DebugBridge {
   // Called from **DAP** client to get variable by variable reference
   VariablesResponse getVariables(int reference);
 
+  // Called from **DAP** client to set variable value
+  ResponseOrError<SetVariableResponse> setVariable(
+      const SetVariableRequest& request);
+
   // Called from **DAP** client to step to next line
   void stepOver();
 
@@ -101,9 +105,6 @@ class DebugBridge {
 
   std::string stopReasonToString(BreakReason reason) const;
 
-  Scope registerLocalVariables(lua_State* L, int level);
-  Scope registerUpValues(lua_State* L, int level);
-
   void processPendingMainThreadActions();
 
   void removeAllBreakPoints();
@@ -122,7 +123,6 @@ class DebugBridge {
       const EvaluateRequest& request);
 
   ResponseOrError<EvaluateResponse> evalWithEnv(const EvaluateRequest& request);
-  bool pushBreakEnv(int level);
 
  private:
   bool stop_on_entry_ = false;
