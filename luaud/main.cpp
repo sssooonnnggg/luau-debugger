@@ -23,10 +23,7 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  auto log_handler = [](std::string_view msg) {
-    printf("%s", msg.data());
-    printToDebugConsole(msg);
-  };
+  auto log_handler = [](std::string_view msg) { printf("%s", msg.data()); };
   auto error_handler = [](std::string_view msg) {
     fprintf(stderr, "%s", msg.data());
   };

@@ -30,10 +30,11 @@ struct BreakContext {
 
 using namespace dap;
 
-class DebugBridge {
+class DebugBridge final {
  public:
   static DebugBridge* getDebugBridge(lua_State* L);
   DebugBridge(bool stop_on_entry);
+  ~DebugBridge();
 
   void initialize(lua_State* L);
   bool isDebugBreak();

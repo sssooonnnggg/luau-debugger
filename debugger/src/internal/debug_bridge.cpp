@@ -23,10 +23,17 @@ namespace luau::debugger {
 
 DebugBridge::DebugBridge(bool stop_on_entry) : stop_on_entry_(stop_on_entry) {}
 
+DebugBridge::~DebugBridge() {
+  if (main_vm_ != nullptr)
+    lua_setthreaddata(main_vm_, nullptr);
+}
+
 DebugBridge* DebugBridge::getDebugBridge(lua_State* L) {
   lua_State* main_vm = lua_mainthread(L);
-  return reinterpret_cast<Debugger*>(lua_getthreaddata(main_vm))
-      ->debug_bridge_.get();
+  auto* debugger = reinterpret_cast<Debugger*>(lua_getthreaddata(main_vm));
+  if (debugger == nullptr)
+    return nullptr;
+  return debugger->debug_bridge_.get();
 }
 
 void DebugBridge::initialize(lua_State* L) {
@@ -34,6 +41,8 @@ void DebugBridge::initialize(lua_State* L) {
   lua_Callbacks* cb = lua_callbacks(L);
   cb->debugbreak = [](lua_State* L, lua_Debug* ar) {
     auto bridge = DebugBridge::getDebugBridge(L);
+    if (bridge == nullptr)
+      return;
     bridge->onDebugBreak(L, ar,
                          bridge->isBreakOnEntry(L) ? BreakReason::Entry
                                                    : BreakReason::BreakPoint);
@@ -41,11 +50,16 @@ void DebugBridge::initialize(lua_State* L) {
 
   cb->interrupt = [](lua_State* L, int gc) {
     auto bridge = DebugBridge::getDebugBridge(L);
+    if (bridge == nullptr)
+      return;
     bridge->processPendingMainThreadActions();
   };
 
   cb->userthread = [](lua_State* LP, lua_State* L) {
     auto bridge = DebugBridge::getDebugBridge(L);
+    if (bridge == nullptr)
+      return;
+
     if (LP == nullptr)
       bridge->markDead(L);
     else
@@ -393,6 +407,8 @@ void DebugBridge::enableDebugStep(bool enable) {
 
   callbacks->debugstep = [](lua_State* L, lua_Debug* ar) {
     auto bridge = DebugBridge::getDebugBridge(L);
+    if (bridge == nullptr)
+      return;
     if (bridge->single_step_processor_ != nullptr)
       if ((bridge->single_step_processor_)(L, ar))
         bridge->onDebugBreak(L, ar, BreakReason::Step);

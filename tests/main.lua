@@ -1,11 +1,11 @@
-local function main()
-    local main_number = 3
-    local main_string = "ghi"
+local function test_variables()
+    local number = 3
+    local string = "ghi"
 
     local function foo()
         local foo_number = 2
         local foo_string = "def"
-    
+
         local function bar(a, b)
             local bar_nil
             local bar_boolean = true
@@ -44,14 +44,12 @@ local function main()
             print("Hello, World!")
             print(foo_string)
         end
-    
+
         bar(500, 600)
     end
 
     foo()
 end
-
-require("./a/a")()
 
 local function foo()
   local a = 1
@@ -70,33 +68,40 @@ local function test_step()
   bar()
 end
 
-test_step()
+local math = require("./math/math")
 
-local function test_loadstring()
-  local a = 1
-  local f = loadstring("print('loadstring==================', a)")
-  local r, msg = pcall(f)
-  if r == false then
-    print('===========================', msg)
-  end
+local function test_coroutine()
+    local test_coroutine = coroutine.create(function()
+        print("coroutine start")
+        local a = 1
+        local b = 2
+        local c = { a, b, "hello coroutine"}
+        local d, e= coroutine.yield(a, b, c)
+        print("coroutine resume", d, e)
+    end)
+
+    local a, b, c = coroutine.resume(test_coroutine)
+    print("coroutine yield", a, b, c)
+    coroutine.resume(test_coroutine, 3, 4)
 end
 
-test_loadstring()
 
-local test_coroutine = coroutine.create(function()
-  print("coroutine start")
+local function test_math()
+  local add = math.add
+  local sub = math.sub
+  local mul = math.mul
   local a = 1
   local b = 2
-  local c = { a, b, "hello"}
-  local d, e= coroutine.yield(a, b, c)
-  print("coroutine resume", d, e)
-end)
-
-local a, b, c = coroutine.resume(test_coroutine)
-print("coroutine==================", a, b, c)
-coroutine.resume(test_coroutine, 3, 4)
-
-
-while true do
-    main()
+  print("add", add(a, b))
+  print("sub", sub(a, b))
+  print("mul", mul(a, b))
 end
+
+local function main()
+    test_variables()
+    test_step()
+    test_coroutine()
+    test_math()
+end
+
+main()
