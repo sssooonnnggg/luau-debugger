@@ -4,7 +4,7 @@ A debugger for Luau with debug adapter protocol(DAP) support.
 
 ## Usage
 - Get a `luaud` executable
-  - Download from [release](https://github.com/sssooonnnggg/luau-debugger/releases/download/v1.0.14/luaud.zip)
+  - Download from [release](https://github.com/sssooonnnggg/luau-debugger/releases)
   - Or build from [source](https://github.com/sssooonnnggg/luau-debugger)
 - Install `luau-debugger` [extension](https://marketplace.visualstudio.com/items?itemName=sssooonnnggg.luau-debugger)
 - Open lua folders in VSCode
@@ -41,6 +41,7 @@ A debugger for Luau with debug adapter protocol(DAP) support.
   - [x] Continue
   - [ ] Force break
   - [x] StackTrace
+    - [ ] StackTrace support coroutine
   - [x] Scopes
   - [x] Get variables
     - [x] Locals
@@ -56,7 +57,7 @@ A debugger for Luau with debug adapter protocol(DAP) support.
     - [x] vector
     - [x] function
     - [ ] userdata
-  - [ ] Set variables
+  - [x] Set variables
   - [x] Repl
   - [x] Watch
   - [x] Hover
@@ -65,9 +66,5 @@ A debugger for Luau with debug adapter protocol(DAP) support.
     - [x] Step over
     - [x] Step out
   - [x] Disconnect and reconnect
-  - [ ] Log
-  - [ ] Coroutine
-
-## Notice
-
-- To avoid debug info to be stripped by luau compiler, `Luau::CompileOptions::debugLevel` should be set to `2`
+  - [ ] Print in debug console
+  - [x] Coroutine
