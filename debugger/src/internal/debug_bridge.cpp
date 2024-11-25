@@ -44,7 +44,16 @@ void DebugBridge::initialize(lua_State* L) {
     bridge->processPendingMainThreadActions();
   };
 
+  cb->userthread = [](lua_State* LP, lua_State* L) {
+    auto bridge = DebugBridge::getDebugBridge(L);
+    if (LP == nullptr)
+      bridge->markDead(L);
+    else
+      bridge->markAlive(L, LP);
+  };
+
   lua_singlestep(L, true);
+  markAlive(L, nullptr);
 }
 
 bool DebugBridge::isDebugBreak() {
@@ -93,8 +102,10 @@ std::string DebugBridge::stopReasonToString(BreakReason reason) const {
 }
 
 StackTraceResponse DebugBridge::getStackTrace() {
+  if (!isDebugBreak())
+    return StackTraceResponse{};
+
   StackTraceResponse response;
-  std::scoped_lock lock(break_mutex_);
   lua_State* L = break_vm_;
 
   variable_registry_.update(break_vm_);
@@ -111,12 +122,16 @@ StackTraceResponse DebugBridge::getStackTrace() {
     response.stackFrames.emplace_back(std::move(frame));
   }
 
+  // TODO: consider coroutine stack
+
   response.totalFrames = response.stackFrames.size();
   return response;
 }
 
 ScopesResponse DebugBridge::getScopes(int level) {
-  std::scoped_lock lock(break_mutex_);
+  if (!isDebugBreak())
+    return {};
+
   ScopesResponse response;
 
   response.scopes = {
@@ -132,7 +147,9 @@ ScopesResponse DebugBridge::getScopes(int level) {
 }
 
 VariablesResponse DebugBridge::getVariables(int reference) {
-  std::scoped_lock lock(break_mutex_);
+  if (!isDebugBreak())
+    return {};
+
   auto variables = variable_registry_.getVariables(Scope(reference));
   if (variables == nullptr)
     return VariablesResponse{};
@@ -148,7 +165,9 @@ VariablesResponse DebugBridge::getVariables(int reference) {
 
 ResponseOrError<SetVariableResponse> DebugBridge::setVariable(
     const SetVariableRequest& request) {
-  std::scoped_lock lock(break_mutex_);
+  if (!isDebugBreak())
+    return {};
+
   auto result = variable_registry_.getVariables(request.variablesReference);
   if (result == nullptr)
     return Error{"Variable scope not found"};
@@ -261,15 +280,24 @@ std::string DebugBridge::normalizePath(std::string_view path) const {
 }
 
 BreakContext DebugBridge::getBreakContext(lua_State* L) const {
-  int depth = lua_stackdepth(L);
   lua_Debug ar;
   lua_getinfo(L, 0, "sl", &ar);
   return BreakContext{
       .source_ = normalizePath(ar.source),
       .line_ = ar.currentline,
-      .depth_ = depth,
+      .depth_ = getStackDepth(L),
       .L_ = L,
   };
+}
+
+int DebugBridge::getStackDepth(lua_State* L) const {
+  int depth = lua_stackdepth(L);
+  auto* parent = getParent(L);
+  while (parent != nullptr) {
+    depth += lua_stackdepth(parent);
+    parent = getParent(parent);
+  }
+  return depth;
 }
 
 bool DebugBridge::isBreakOnEntry(lua_State* L) const {
@@ -300,12 +328,12 @@ void DebugBridge::onConnect(dap::Session* session) {
 }
 
 void DebugBridge::onDisconnect() {
+  threadSafeCall(&DebugBridge::removeAllBreakPoints);
   std::scoped_lock lock(break_mutex_);
   if (!resume_) {
     resume_ = true;
     resume_cv_.notify_one();
   }
-  removeAllBreakPoints();
   session_ = nullptr;
 }
 
@@ -338,9 +366,13 @@ void DebugBridge::stepOver() {
 
   auto old_ctx = getBreakContext(break_vm_);
   processSingleStep([this, old_ctx](lua_State* L, lua_Debug* ar) -> bool {
-    if (old_ctx.L_->status == LUA_YIELD)
+    // Step over yield boundary
+    if (isAlive(old_ctx.L_) && old_ctx.L_->status == LUA_YIELD)
       return false;
+
     auto ctx = getBreakContext(L);
+
+    // Normal step over
     return (ctx.depth_ == old_ctx.depth_ && ctx.line_ != old_ctx.line_) ||
            ctx.depth_ < old_ctx.depth_;
   });
@@ -438,6 +470,36 @@ ResponseOrError<EvaluateResponse> DebugBridge::evalWithEnv(
 
   EvaluateResponse response{.result = result};
   return response;
+}
+
+bool DebugBridge::isAlive(lua_State* L) const {
+  return alive_threads_.find(L) != alive_threads_.end();
+}
+
+lua_State* DebugBridge::getParent(lua_State* L) const {
+  auto it = alive_threads_.find(L);
+  if (it == alive_threads_.end())
+    return nullptr;
+  return it->second;
+}
+
+bool DebugBridge::isChild(lua_State* L, lua_State* parent) const {
+  lua_State* current = L;
+  while (auto* p = getParent(current)) {
+    if (p == parent)
+      return true;
+    else
+      current = p;
+  }
+  return true;
+}
+
+void DebugBridge::markAlive(lua_State* L, lua_State* parent) {
+  alive_threads_[L] = parent;
+}
+
+void DebugBridge::markDead(lua_State* L) {
+  alive_threads_.erase(L);
 }
 
 }  // namespace luau::debugger

@@ -7,6 +7,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 #include <dap/protocol.h>
 #include <dap/session.h>
@@ -15,6 +16,7 @@
 #include "internal/file.h"
 #include "internal/variable.h"
 #include "internal/variable_registry.h"
+#include "lstate.h"
 
 namespace luau::debugger {
 
@@ -102,6 +104,7 @@ class DebugBridge {
  private:
   std::string normalizePath(std::string_view path) const;
   BreakContext getBreakContext(lua_State* L) const;
+  int getStackDepth(lua_State* L) const;
   bool isBreakOnEntry(lua_State* L) const;
 
   std::string stopReasonToString(BreakReason reason) const;
@@ -126,6 +129,12 @@ class DebugBridge {
 
   ResponseOrError<EvaluateResponse> evalWithEnv(const EvaluateRequest& request);
 
+  bool isAlive(lua_State* L) const;
+  bool isChild(lua_State* L, lua_State* parent) const;
+  lua_State* getParent(lua_State* L) const;
+  void markAlive(lua_State* L, lua_State* parent);
+  void markDead(lua_State* L);
+
  private:
   bool stop_on_entry_ = false;
   std::string entry_path_;
@@ -147,5 +156,8 @@ class DebugBridge {
   std::mutex main_thread_action_mutex_;
 
   SingleStepProcessor single_step_processor_ = nullptr;
+
+  // Record alive threads with its parent
+  std::unordered_map<lua_State*, lua_State*> alive_threads_;
 };
 }  // namespace luau::debugger

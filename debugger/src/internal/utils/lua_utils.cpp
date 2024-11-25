@@ -1,11 +1,19 @@
+#include <internal/utils.h>
 #include <internal/utils/lua_utils.h>
-#include <cstddef>
+#include <lua.h>
 #include <optional>
-#include "lua.h"
 
 namespace luau::debugger::lua_utils {
 
 std::optional<int> eval(lua_State* L, const std::string& code, int env) {
+  auto main_vm = lua_mainthread(L);
+  auto callbacks = lua_callbacks(main_vm);
+  auto old_step = callbacks->debugstep;
+
+  auto _ = utils::makeRAII(
+      [callbacks]() { callbacks->debugstep = nullptr; },
+      [callbacks, old_step]() { callbacks->debugstep = old_step; });
+
   lua_setsafeenv(L, LUA_ENVIRONINDEX, false);
   auto env_idx = lua_absindex(L, env);
   int top = lua_gettop(L);
