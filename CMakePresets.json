@@ -44,19 +44,22 @@
       "name": "debug-build",
       "displayName": "debug-build",
       "configurePreset": "windows-clang-debug",
-      "configuration": "Debug"
+      "configuration": "Debug",
+      "jobs": 32
     },
     {
       "name": "release-build",
       "displayName": "release-build",
       "configurePreset": "windows-clang-release",
-      "configuration": "RelWithDebInfo"
+      "configuration": "RelWithDebInfo",
+      "jobs": 32
     },
     {
       "name": "publish-build",
       "displayName": "publish-build",
       "configurePreset": "publish-configure",
-      "configuration": "RelWithDebInfo"
+      "configuration": "RelWithDebInfo",
+      "jobs": 32
     }
   ]
 }
