@@ -26,7 +26,7 @@ if (!fs.existsSync(dest_parent))
   fs.mkdirSync(dest_parent);
 
 if (fs.existsSync(dest_path))
-  fs.removeSync(dest_path);
+  fs.rmSync(dest_path);
 
 fs.copyFileSync(src_path, dest_path);
 
