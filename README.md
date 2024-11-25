@@ -17,30 +17,8 @@ A debugger for Luau with debug adapter protocol(DAP) support.
 ```
 
 ## Usage
-- Download or build `luaud` executable
-- Install `luau-debugger` extension
-- Open lua folders in VSCode
-- Add a launch configuration in `launch.json`
-  ```json
-  {
-    "configurations": [
-      {
-        "type": "luau",
-        "request": "attach",
-        "name": "attach to luau debugger",
-        "address": "localhost",
-        "port": 58000
-      }
-    ]
-  }
-  ```
-- Using `luaud` to execute lua script with debug support
-  ```bash
-  luaud 58000 <script>
-  ```
-- Press `F5` to start debugging, enjoy!
 
-  ![](extensions/vscode/docs/demo.gif)
+See [extensions/vscode/README](./extensions/vscode/README.md)
 
 ## Dependencies
 
