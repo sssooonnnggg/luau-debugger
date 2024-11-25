@@ -83,6 +83,20 @@ end
 
 test_loadstring()
 
+local test_coroutine = coroutine.create(function()
+  print("coroutine start")
+  local a = 1
+  local b = 2
+  local c = { a, b, "hello"}
+  local d, e= coroutine.yield(a, b, c)
+  print("coroutine resume", d, e)
+end)
+
+local a, b, c = coroutine.resume(test_coroutine)
+print("coroutine==================", a, b, c)
+coroutine.resume(test_coroutine, 3, 4)
+
+
 while true do
     main()
 end

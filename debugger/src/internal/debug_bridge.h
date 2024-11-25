@@ -22,6 +22,7 @@ struct BreakContext {
   std::string source_;
   int line_ = 0;
   int depth_ = 0;
+  lua_State* L_ = nullptr;
   bool operator<=>(const BreakContext&) const = default;
 };
 
@@ -109,6 +110,7 @@ class DebugBridge {
 
   void removeAllBreakPoints();
 
+  // Return true if execution should be stopped
   using SingleStepProcessor = std::function<bool(lua_State*, lua_Debug* ar)>;
   void processSingleStep(SingleStepProcessor processor);
   void enableDebugStep(bool enable);

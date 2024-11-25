@@ -116,7 +116,7 @@ StackTraceResponse DebugBridge::getStackTrace() {
 }
 
 ScopesResponse DebugBridge::getScopes(int level) {
-  DEBUGGER_ASSERT(isDebugBreak());
+  std::scoped_lock lock(break_mutex_);
   ScopesResponse response;
 
   response.scopes = {
@@ -132,7 +132,7 @@ ScopesResponse DebugBridge::getScopes(int level) {
 }
 
 VariablesResponse DebugBridge::getVariables(int reference) {
-  DEBUGGER_ASSERT(isDebugBreak());
+  std::scoped_lock lock(break_mutex_);
   auto variables = variable_registry_.getVariables(Scope(reference));
   if (variables == nullptr)
     return VariablesResponse{};
@@ -148,7 +148,7 @@ VariablesResponse DebugBridge::getVariables(int reference) {
 
 ResponseOrError<SetVariableResponse> DebugBridge::setVariable(
     const SetVariableRequest& request) {
-  DEBUGGER_ASSERT(isDebugBreak());
+  std::scoped_lock lock(break_mutex_);
   auto result = variable_registry_.getVariables(request.variablesReference);
   if (result == nullptr)
     return Error{"Variable scope not found"};
@@ -264,9 +264,12 @@ BreakContext DebugBridge::getBreakContext(lua_State* L) const {
   int depth = lua_stackdepth(L);
   lua_Debug ar;
   lua_getinfo(L, 0, "sl", &ar);
-  return BreakContext{.source_ = normalizePath(ar.source),
-                      .line_ = ar.currentline,
-                      .depth_ = depth};
+  return BreakContext{
+      .source_ = normalizePath(ar.source),
+      .line_ = ar.currentline,
+      .depth_ = depth,
+      .L_ = L,
+  };
 }
 
 bool DebugBridge::isBreakOnEntry(lua_State* L) const {
@@ -307,7 +310,9 @@ void DebugBridge::onDisconnect() {
 }
 
 void DebugBridge::stepIn() {
-  DEBUGGER_ASSERT(isDebugBreak());
+  if (!isDebugBreak())
+    return;
+
   auto old_ctx = getBreakContext(break_vm_);
   processSingleStep([this, old_ctx](lua_State* L, lua_Debug* ar) -> bool {
     return old_ctx != getBreakContext(L);
@@ -316,7 +321,9 @@ void DebugBridge::stepIn() {
 }
 
 void DebugBridge::stepOut() {
-  DEBUGGER_ASSERT(isDebugBreak());
+  if (!isDebugBreak())
+    return;
+
   auto old_ctx = getBreakContext(break_vm_);
   processSingleStep([this, old_ctx](lua_State* L, lua_Debug* ar) -> bool {
     auto ctx = getBreakContext(L);
@@ -326,9 +333,13 @@ void DebugBridge::stepOut() {
 }
 
 void DebugBridge::stepOver() {
-  DEBUGGER_ASSERT(isDebugBreak());
+  if (!isDebugBreak())
+    return;
+
   auto old_ctx = getBreakContext(break_vm_);
   processSingleStep([this, old_ctx](lua_State* L, lua_Debug* ar) -> bool {
+    if (old_ctx.L_->status == LUA_YIELD)
+      return false;
     auto ctx = getBreakContext(L);
     return (ctx.depth_ == old_ctx.depth_ && ctx.line_ != old_ctx.line_) ||
            ctx.depth_ < old_ctx.depth_;
@@ -357,7 +368,6 @@ void DebugBridge::enableDebugStep(bool enable) {
 }
 
 void DebugBridge::resumeInternal() {
-  DEBUGGER_ASSERT(isDebugBreak());
   std::unique_lock<std::mutex> lock(break_mutex_);
   DEBUGGER_LOG_INFO("[resume] Resume execution");
   resume_ = true;

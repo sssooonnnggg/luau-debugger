@@ -82,7 +82,7 @@ A debugger for Luau with debug adapter protocol(DAP) support.
     - [x] vector
     - [x] function
     - [ ] userdata
-  - [ ] Set variables
+  - [x] Set variables
   - [x] Repl
   - [x] Watch
   - [x] Hover
@@ -91,8 +91,8 @@ A debugger for Luau with debug adapter protocol(DAP) support.
     - [x] Step over
     - [x] Step out
   - [x] Disconnect and reconnect
-  - [ ] Log
-  - [ ] Coroutine
+  - [ ] Print in debug console
+  - [x] Coroutine
 
 ## Notice
 
