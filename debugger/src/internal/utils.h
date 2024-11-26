@@ -1,8 +1,9 @@
 #pragma once
 
+#include <type_traits>
+
 #include <internal/utils/dap_utils.h>
 #include <internal/utils/lua_utils.h>
-#include <type_traits>
 
 namespace luau::debugger::utils {
 template <class T, class U>

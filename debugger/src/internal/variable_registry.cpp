@@ -1,9 +1,9 @@
-#include <internal/log.h>
-#include <internal/variable_registry.h>
+#include <lua.h>
 #include <string_view>
-#include "internal/scope.h"
-#include "log.h"
-#include "lua.h"
+
+#include <internal/log.h>
+#include <internal/scope.h>
+#include <internal/variable_registry.h>
 
 namespace luau::debugger {
 

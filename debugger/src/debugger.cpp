@@ -1,17 +1,16 @@
+#include <cstdlib>
+#include <memory>
+#include <utility>
+
 #include <dap/io.h>
 #include <dap/network.h>
 #include <dap/protocol.h>
 #include <dap/session.h>
 
-#include <atomic>
-#include <cstdlib>
-#include <memory>
-#include <mutex>
-#include <utility>
+#include <internal/debug_bridge.h>
+#include <internal/utils.h>
 
 #include "debugger.h"
-#include "internal/debug_bridge.h"
-#include "internal/utils.h"
 
 namespace luau::debugger {
 

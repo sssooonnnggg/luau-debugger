@@ -4,8 +4,8 @@
 #include <string>
 #include <unordered_map>
 
-#include "internal/breakpoint.h"
-#include "internal/utils.h"
+#include <internal/breakpoint.h>
+#include <internal/utils.h>
 
 namespace luau::debugger {
 class File {

@@ -1,8 +1,8 @@
 #include <lua.h>
 
-#include "internal/breakpoint.h"
-#include "internal/log.h"
-#include "internal/utils.h"
+#include <internal/breakpoint.h>
+#include <internal/log.h>
+#include <internal/utils.h>
 
 namespace luau::debugger {
 

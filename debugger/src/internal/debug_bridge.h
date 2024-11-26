@@ -1,22 +1,20 @@
 #pragma once
 
+#include <lstate.h>
 #include <lua.h>
 #include <condition_variable>
 #include <functional>
 #include <mutex>
-#include <optional>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 
 #include <dap/protocol.h>
 #include <dap/session.h>
 
-#include "breakpoint.h"
-#include "internal/file.h"
-#include "internal/variable.h"
-#include "internal/variable_registry.h"
-#include "lstate.h"
+#include <internal/breakpoint.h>
+#include <internal/file.h>
+#include <internal/variable.h>
+#include <internal/variable_registry.h>
 
 namespace luau::debugger {
 
