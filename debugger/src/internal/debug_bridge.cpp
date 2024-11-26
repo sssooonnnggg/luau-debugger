@@ -386,6 +386,9 @@ void DebugBridge::stepOver() {
 
     auto ctx = getBreakContext(L);
 
+    if (L != old_ctx.L_ && !isChild(old_ctx.L_, L))
+      return false;
+
     // Normal step over
     return (ctx.depth_ == old_ctx.depth_ && ctx.line_ != old_ctx.line_) ||
            ctx.depth_ < old_ctx.depth_;
@@ -507,7 +510,7 @@ bool DebugBridge::isChild(lua_State* L, lua_State* parent) const {
     else
       current = p;
   }
-  return true;
+  return false;
 }
 
 void DebugBridge::markAlive(lua_State* L, lua_State* parent) {
