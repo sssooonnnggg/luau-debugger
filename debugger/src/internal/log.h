@@ -28,6 +28,11 @@ inline void debug_break() {
 }
 }  // namespace luau::debugger::log
 
+#if defined(_MSC_VER) && !defined(__clang__)
+#define __FILE_NAME__ \
+  (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
+#endif
+
 #define DEBUGGER_LOG_INFO(...)                                                \
   log::info()(                                                                \
       std::format("[info][Luau.Debugger][{}:{}] ", __FILE_NAME__, __LINE__) + \

@@ -264,7 +264,7 @@ void DebugBridge::setBreakPoints(
                       normalized_path);
     std::unordered_map<int, BreakPoint> bps;
     for (const auto& bp : *breakpoints)
-      bps.emplace(bp.line, BreakPoint::create(bp.line));
+      bps.emplace(static_cast<int>(bp.line), BreakPoint::create(bp.line));
 
     files_.emplace(normalized_path, File::fromBreakPoints(path, bps));
     return;

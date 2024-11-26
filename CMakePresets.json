@@ -25,6 +25,27 @@
       }
     },
     {
+      "name": "windows-msvc-debug",
+      "displayName": "windows-msvc-debug",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CPP_DAP_ROOT": "${sourceDir}/../cppdap",
+        "LUAU_ROOT": "${sourceDir}/../luau",
+        "CPPDAP_BUILD_EXAMPLES": "ON",
+        "LUAU_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "windows-msvc-release",
+      "displayName": "windows-msvc-release",
+      "inherits": "windows-msvc-debug",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
       "name": "publish-configure",
       "displayName": "publish-configure",
       "generator": "Ninja",
@@ -41,16 +62,30 @@
   ],
   "buildPresets": [
     {
-      "name": "debug-build",
-      "displayName": "debug-build",
+      "name": "clang-debug-build",
+      "displayName": "clang-debug-build",
       "configurePreset": "windows-clang-debug",
       "configuration": "Debug",
       "jobs": 32
     },
     {
-      "name": "release-build",
-      "displayName": "release-build",
+      "name": "clang-release-build",
+      "displayName": "clang-release-build",
       "configurePreset": "windows-clang-release",
+      "configuration": "RelWithDebInfo",
+      "jobs": 32
+    },
+    {
+      "name": "msvc-debug-build",
+      "displayName": "msvc-debug-build",
+      "configurePreset": "windows-msvc-debug",
+      "configuration": "Debug",
+      "jobs": 32
+    },
+    {
+      "name": "msvc-release-build",
+      "displayName": "msvc-release-build",
+      "configurePreset": "windows-msvc-release",
       "configuration": "RelWithDebInfo",
       "jobs": 32
     },

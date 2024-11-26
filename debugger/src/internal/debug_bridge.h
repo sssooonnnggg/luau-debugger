@@ -25,7 +25,7 @@ struct BreakContext {
   int line_ = 0;
   int depth_ = 0;
   lua_State* L_ = nullptr;
-  bool operator<=>(const BreakContext&) const = default;
+  auto operator<=>(const BreakContext&) const = default;
 };
 
 using namespace dap;
