@@ -97,5 +97,5 @@ A debugger for Luau with debug adapter protocol(DAP) support.
     - [x] Step over
     - [x] Step out
   - [x] Disconnect and reconnect
-  - [ ] Print in debug console
+  - [x] Print to debug console
   - [x] Coroutine
