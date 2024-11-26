@@ -13,7 +13,7 @@ const configure = `cmake --preset windows-clang-release`
 console.log(configure);
 execSync(configure, { stdio: 'inherit', cwd: root });
 
-const build = `cmake --build --preset release-build`
+const build = `cmake --build --preset clang-release-build`
 console.log(build);
 execSync(build, { stdio: 'inherit', cwd: root });
 
