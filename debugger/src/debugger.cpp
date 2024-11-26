@@ -63,6 +63,11 @@ void Debugger::onLuaFileLoaded(lua_State* L,
   debug_bridge_->onLuaFileLoaded(L, path, is_entry);
 }
 
+void Debugger::onError(std::string_view msg) {
+  if (session_ != nullptr)
+    session_->send(dap::OutputEvent{.output = std::string{msg}});
+}
+
 void Debugger::closeSession() {
   if (std::exchange(session_, nullptr) == nullptr)
     DEBUGGER_LOG_INFO("Debugger already stopped");

@@ -28,6 +28,7 @@ struct BreakContext {
 
 using namespace dap;
 
+class LuaCallbacks;
 class DebugBridge final {
  public:
   static DebugBridge* getDebugBridge(lua_State* L);
@@ -101,6 +102,8 @@ class DebugBridge final {
   }
 
  private:
+  void initCallbacks();
+
   std::string normalizePath(std::string_view path) const;
   BreakContext getBreakContext(lua_State* L) const;
   int getStackDepth(lua_State* L) const;
@@ -135,6 +138,7 @@ class DebugBridge final {
   void markDead(lua_State* L);
 
  private:
+  friend class LuaCallbacks;
   bool stop_on_entry_ = false;
   std::string entry_path_;
 

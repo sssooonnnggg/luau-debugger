@@ -97,11 +97,17 @@ local function test_math()
   print("mul", mul(a, b))
 end
 
+local function test_error()
+    -- error should output to debug console
+    -- abc.def()
+end
+
 local function main()
     test_variables()
     test_step()
     test_coroutine()
     test_math()
+    test_error()
 end
 
 main()

@@ -33,8 +33,8 @@ int main(int argc, char** argv) {
   luau::debugger::Debugger debugger(true);
 
   runtime.setErrorHandler(error_handler);
-  runtime.installDebugger(&debugger);
   runtime.installLibrary();
+  runtime.installDebugger(&debugger);
 
   debugger.listen(std::atoi(argv[1]));
   int result = runtime.runFile(argv[2]);

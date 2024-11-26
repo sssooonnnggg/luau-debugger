@@ -19,20 +19,13 @@ class Runtime {
   void installLibrary();
   bool runFile(const char* name);
 
-  void setErrorHandler(std::function<void(std::string_view)> handler) {
-    errorHandler_ = handler;
-  }
-
- private:
-  static void error(std::string_view msg) {
-    if (errorHandler_)
-      errorHandler_(std::format("\x1B[31m{}\033[0m\n", msg));
-  }
+  void setErrorHandler(std::function<void(std::string_view)> handler);
+  void onError(std::string_view msg);
 
  private:
   lua_State* vm_ = nullptr;
   debugger::Debugger* debugger_ = nullptr;
-  inline static std::function<void(std::string_view)> errorHandler_ = nullptr;
+  std::function<void(std::string_view)> errorHandler_ = nullptr;
 };
 
 }  // namespace luau
