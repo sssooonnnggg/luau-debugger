@@ -6,7 +6,7 @@
 
 namespace file_utils {
 inline std::optional<std::string> readFile(const std::string& name) {
-  std::ifstream file(name, std::ios::binary);
+  std::ifstream file(name, std::ios::in);
   if (!file)
     return std::nullopt;
 

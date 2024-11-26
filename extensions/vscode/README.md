@@ -99,3 +99,4 @@ A debugger for Luau with debug adapter protocol(DAP) support.
   - [x] Disconnect and reconnect
   - [x] Print to debug console
   - [x] Coroutine
+  - [ ] Multiply lua vm

@@ -15,7 +15,7 @@ A debugger for Luau with debug adapter protocol(DAP) support.
   |
   ├── luaud       # A minimal Luau executable with debug support
   ├── extensions  # VSCode extension for Luau debugger
-  └── tests       # Tests with lua scripts
+  └── tests       # Test lua scripts
 ```
 
 ## Usage

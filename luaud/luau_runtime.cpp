@@ -1,3 +1,5 @@
+#include <array>
+#include <filesystem>
 #include <format>
 #include <string>
 
@@ -48,31 +50,67 @@ static int finishrequire(lua_State* L) {
   return 1;
 }
 
+static std::string normalizePath(lua_State* L, const std::string& path) {
+  std::filesystem::path input_path = path;
+  input_path = input_path.lexically_normal();
+  if (input_path.is_absolute())
+    return input_path.string();
+
+  lua_Debug ar;
+  lua_getinfo(L, 1, "s", &ar);
+  std::string source_path = ar.source;
+  if (source_path.empty())
+    return path;
+
+  if (auto type = source_path[0]; type == '=' || type == '@')
+    source_path = source_path.substr(1);
+
+  std::filesystem::path source_dir =
+      std::filesystem::path(source_path).parent_path();
+  std::filesystem::path normalized_path =
+      (source_dir / path).lexically_normal();
+  return normalized_path.string();
+}
+
 static int lua_require(lua_State* L) {
-  std::string name = luaL_checkstring(L, 1);
+  std::string module_path = luaL_checkstring(L, 1);
+  std::string normalized_path = normalizePath(L, module_path);
+  luaL_findtable(L, LUA_REGISTRYINDEX, "_MODULES", 1);
 
-  RequireResolver::ResolvedRequire resolved_require =
-      RequireResolver::resolveRequire(L, std::move(name));
+  std::array suffixes{".luau", ".lua", "/init.luau", "/init.lua"};
 
-  if (resolved_require.status == RequireResolver::ModuleStatus::Cached)
-    return finishrequire(L);
-  else if (resolved_require.status == RequireResolver::ModuleStatus::Ambiguous)
-    luaL_errorL(L, "require path could not be resolved to a unique file");
-  else if (resolved_require.status == RequireResolver::ModuleStatus::NotFound)
+  std::string source_code;
+  std::string resolved_path;
+  for (const char* suffix : suffixes) {
+    resolved_path = normalized_path + suffix;
+
+    lua_getfield(L, -1, resolved_path.c_str());
+    if (!lua_isnil(L, -1))
+      return finishrequire(L);
+
+    lua_pop(L, 1);
+
+    std::optional<std::string> source = file_utils::readFile(resolved_path);
+    if (source) {
+      source_code = source.value();
+      break;
+    }
+  }
+
+  if (source_code.empty())
     luaL_errorL(L, "error requiring module");
 
   lua_State* GL = lua_mainthread(L);
   lua_State* ML = lua_newthread(GL);
   lua_xmove(GL, L, 1);
 
-  // now we can compile & run module on the new thread
-  std::string bytecode = Luau::compile(resolved_require.sourceCode, copts());
-  if (luau_load(ML, resolved_require.chunkName.c_str(), bytecode.data(),
-                bytecode.size(), 0) == 0) {
+  std::string bytecode = Luau::compile(source_code, copts());
+  if (luau_load(ML, resolved_path.c_str(), bytecode.data(), bytecode.size(),
+                0) == 0) {
     // NOTICE: Call debugger when file is loaded
     auto* debugger =
         reinterpret_cast<luau::debugger::Debugger*>(lua_getthreaddata(GL));
-    debugger->onLuaFileLoaded(ML, resolved_require.absolutePath, false);
+    debugger->onLuaFileLoaded(ML, resolved_path, false);
 
     int status = lua_resume(ML, L, 0);
 
@@ -90,7 +128,7 @@ static int lua_require(lua_State* L) {
 
   lua_xmove(ML, L, 1);
   lua_pushvalue(L, -1);
-  lua_setfield(L, -4, resolved_require.absolutePath.c_str());
+  lua_setfield(L, -4, resolved_path.c_str());
 
   // L stack: _MODULES ML result
   return finishrequire(L);

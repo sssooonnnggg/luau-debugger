@@ -15,7 +15,6 @@
       ],
       "stopAtEntry": false,
       "environment": [],
-      // "console": "externalTerminal",
       "preLaunchTask": "CMake: build"
     },
     {
@@ -28,8 +27,13 @@
         "${workspaceRoot}/tests/main.lua"
       ],
       "stopAtEntry": false,
-      "environment": [],
-      // "console": "externalTerminal"
+      "environment": []
+    },
+    {
+      "name": "[Luaud] Attach",
+      "type": "cppvsdbg",
+      "request": "attach",
+      "processId": "${command:pickProcess}"
     }
   ]
 }

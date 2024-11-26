@@ -53,8 +53,6 @@ bool Debugger::stop() {
   closeSession();
   server_->stop();
   debug_bridge_.reset();
-
-  DEBUGGER_LOG_INFO("Debugger stopped");
   return true;
 }
 
@@ -69,8 +67,12 @@ void Debugger::onError(std::string_view msg, lua_State* L) {
 }
 
 void Debugger::closeSession() {
-  if (std::exchange(session_, nullptr) == nullptr)
-    DEBUGGER_LOG_INFO("Debugger already stopped");
+  if (session_ != nullptr) {
+    // FIXME: This is a workaround to avoid error message not being sent to the
+    // client.
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+  session_ = nullptr;
 }
 
 void Debugger::registerProtocolHandlers() {
