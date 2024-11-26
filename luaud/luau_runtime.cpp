@@ -1,13 +1,15 @@
-#include <Luau/Common.h>
-#include <lualib.h>
 #include <format>
 #include <string>
 
+#include <Luau/Common.h>
 #include <Luau/Compiler.h>
 #include <Require.h>
+#include <lua.h>
+#include <lualib.h>
 
-#include "debugger.h"
-#include "file_utils.h"
+#include <debugger.h>
+#include <file_utils.h>
+
 #include "luau_runtime.h"
 
 namespace {
@@ -121,7 +123,8 @@ Runtime::Runtime() {
                              const char* function) {
     if (runtime_)
       runtime_->onError(
-          std::format("{}({}): ASSERTION FAILED: {}\n", file, line, expr));
+          std::format("{}({}): ASSERTION FAILED: {}\n", file, line, expr),
+          nullptr);
     return 1;
   };
   runtime_ = this;
@@ -158,7 +161,7 @@ void Runtime::installLibrary() {
 bool Runtime::runFile(const char* name) {
   std::optional<std::string> source = file_utils::readFile(name);
   if (!source) {
-    onError(std::format("Error opening {}\n", name));
+    onError(std::format("Error opening {}\n", name), nullptr);
     return false;
   }
 
@@ -189,7 +192,7 @@ bool Runtime::runFile(const char* name) {
     msg += "\nstacktrace:\n";
     msg += lua_debugtrace(L);
 
-    onError(msg);
+    onError(msg, L);
   }
 
   lua_pop(vm_, 1);
@@ -200,12 +203,12 @@ void Runtime::setErrorHandler(std::function<void(std::string_view)> handler) {
   errorHandler_ = handler;
 }
 
-void Runtime::onError(std::string_view msg) {
+void Runtime::onError(std::string_view msg, lua_State* L) {
   auto with_color = std::format("\x1B[31m{}\033[0m\n", msg);
   if (errorHandler_)
     errorHandler_(with_color);
   if (debugger_)
-    debugger_->onError(with_color);
+    debugger_->onError(with_color, L);
 }
 
 }  // namespace luau

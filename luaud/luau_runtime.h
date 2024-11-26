@@ -20,7 +20,7 @@ class Runtime {
   bool runFile(const char* name);
 
   void setErrorHandler(std::function<void(std::string_view)> handler);
-  void onError(std::string_view msg);
+  void onError(std::string_view msg, lua_State* L);
 
  private:
   lua_State* vm_ = nullptr;

@@ -59,7 +59,7 @@ class Debugger {
   bool stop();
 
   void onLuaFileLoaded(lua_State* L, std::string_view path, bool is_entry);
-  void onError(std::string_view msg);
+  void onError(std::string_view msg, lua_State* L);
 
  private:
   void onClientConnected(const std::shared_ptr<dap::ReaderWriter>& rw);

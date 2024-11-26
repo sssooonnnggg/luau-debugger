@@ -2,13 +2,16 @@
 #include <filesystem>
 #include <format>
 #include <mutex>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 
 #include <lstate.h>
 #include <lua.h>
+#include <lualib.h>
 
 #include <dap/protocol.h>
+#include <dap/types.h>
 
 #include <dap/session.h>
 #include <internal/breakpoint.h>
@@ -17,7 +20,7 @@
 #include <internal/utils.h>
 #include <internal/variable.h>
 
-#include <debugger.h>
+#include "debugger.h"
 
 namespace luau::debugger {
 
@@ -37,7 +40,7 @@ class LuaCallbacks {
     auto bridge = DebugBridge::getDebugBridge(L);
     if (bridge == nullptr)
       return;
-    bridge->processPendingMainThreadActions();
+    bridge->interruptUpdate();
   };
 
   static void userthread(lua_State* LP, lua_State* L) {
@@ -59,6 +62,40 @@ class LuaCallbacks {
       if ((bridge->single_step_processor_)(L, ar))
         bridge->onDebugBreak(L, ar, DebugBridge::BreakReason::Step);
   };
+
+  static int print(lua_State* L) {
+    int lua_print = lua_upvalueindex(1);
+
+    int args = lua_gettop(L);
+    int begin = lua_absindex(L, -args);
+    int end = lua_absindex(L, -1) + 1;
+
+    lua_checkstack(L, args + 1);
+    lua_pushvalue(L, lua_print);
+    for (int i = begin; i < end; ++i)
+      lua_pushvalue(L, i);
+
+    lua_call(L, args, 0);
+
+    auto bridge = DebugBridge::getDebugBridge(L);
+    if (bridge == nullptr)
+      return 0;
+
+    int n = lua_gettop(L);
+    std::string output;
+    for (int i = 1; i <= n; i++) {
+      size_t l;
+      const char* s = luaL_tolstring(L, i, &l);
+      if (i > 1)
+        output += "\t";
+      output.append(s, l);
+      lua_pop(L, 1);  // pop result
+    }
+    output += "\n";
+
+    bridge->writeDebugConsole(output, L, 1);
+    return 0;
+  }
 };
 
 DebugBridge::DebugBridge(bool stop_on_entry) : stop_on_entry_(stop_on_entry) {}
@@ -79,16 +116,30 @@ DebugBridge* DebugBridge::getDebugBridge(lua_State* L) {
 void DebugBridge::initialize(lua_State* L) {
   main_vm_ = L;
 
-  initCallbacks();
+  initializeCallbacks();
+  captureOutput();
+
   lua_singlestep(L, true);
   markAlive(L, nullptr);
 }
 
-void DebugBridge::initCallbacks() {
+void DebugBridge::initializeCallbacks() {
   lua_Callbacks* cb = lua_callbacks(main_vm_);
   cb->debugbreak = LuaCallbacks::debugbreak;
   cb->interrupt = LuaCallbacks::interrupt;
   cb->userthread = LuaCallbacks::userthread;
+}
+
+void DebugBridge::captureOutput() {
+  const char* global_print = "print";
+  auto enable = lua_getreadonly(main_vm_, LUA_GLOBALSINDEX);
+  lua_setreadonly(main_vm_, LUA_GLOBALSINDEX, false);
+  lua_getglobal(main_vm_, global_print);
+  if (lua_isfunction(main_vm_, -1)) {
+    lua_pushcclosure(main_vm_, LuaCallbacks::print, "debugprint", 1);
+    lua_setglobal(main_vm_, global_print);
+  }
+  lua_setreadonly(main_vm_, LUA_GLOBALSINDEX, enable);
 }
 
 bool DebugBridge::isDebugBreak() {
@@ -340,18 +391,18 @@ bool DebugBridge::isBreakOnEntry(lua_State* L) const {
   return entry_path_ == context.source_ && context.line_ == 1;
 }
 
-void DebugBridge::processPendingMainThreadActions() {
+void DebugBridge::interruptUpdate() {
   std::vector<std::function<void()>> actions;
   {
-    std::scoped_lock lock(main_thread_action_mutex_);
-    std::swap(main_thread_actions_, actions);
+    std::scoped_lock lock(deferred_mutex_);
+    std::swap(deferred_actions_, actions);
   }
 
   for (const auto& action : actions)
     action();
 }
 
-void DebugBridge::removeAllBreakPoints() {
+void DebugBridge::clearBreakPoints() {
   for (auto& [_, file] : files_)
     file.clearBreakPoints();
 }
@@ -363,7 +414,7 @@ void DebugBridge::onConnect(dap::Session* session) {
 }
 
 void DebugBridge::onDisconnect() {
-  threadSafeCall(&DebugBridge::removeAllBreakPoints);
+  threadSafeCall(&DebugBridge::clearBreakPoints);
   std::scoped_lock lock(break_mutex_);
   if (!resume_) {
     resume_ = true;
@@ -533,6 +584,24 @@ void DebugBridge::markAlive(lua_State* L, lua_State* parent) {
 
 void DebugBridge::markDead(lua_State* L) {
   alive_threads_.erase(L);
+}
+
+void DebugBridge::writeDebugConsole(std::string_view output,
+                                    lua_State* L,
+                                    int level) {
+  if (session_ == nullptr)
+    return;
+
+  dap::OutputEvent event;
+  event.output = std::string{output};
+
+  lua_Debug ar;
+  if (L != nullptr && lua_getinfo(L, 1, "sln", &ar)) {
+    event.line = ar.currentline;
+    event.source = dap::Source{.path = normalizePath(ar.source)};
+  }
+
+  session_->send(std::move(event));
 }
 
 }  // namespace luau::debugger

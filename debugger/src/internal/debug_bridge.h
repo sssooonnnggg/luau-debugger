@@ -92,8 +92,8 @@ class DebugBridge final {
     if (isDebugBreak())
       std::invoke(std::forward<F>(f), this, std::forward<Args>(args)...);
     else {
-      std::scoped_lock lock(main_thread_action_mutex_);
-      main_thread_actions_.emplace_back(
+      std::scoped_lock lock(deferred_mutex_);
+      deferred_actions_.emplace_back(
           [f = std::forward<F>(f),
            args = std::make_tuple(this, std::forward<Args>(args)...)]() {
             std::apply(f, args);
@@ -101,21 +101,26 @@ class DebugBridge final {
     }
   }
 
+  void writeDebugConsole(std::string_view msg, lua_State* L, int level = 0);
+
  private:
-  void initCallbacks();
+  void initializeCallbacks();
+  void captureOutput();
 
   std::string normalizePath(std::string_view path) const;
+  bool isBreakOnEntry(lua_State* L) const;
+
   BreakContext getBreakContext(lua_State* L) const;
   int getStackDepth(lua_State* L) const;
-  bool isBreakOnEntry(lua_State* L) const;
 
   std::string stopReasonToString(BreakReason reason) const;
 
-  void processPendingMainThreadActions();
+  void interruptUpdate();
 
-  void removeAllBreakPoints();
+  void clearBreakPoints();
 
-  // Return true if execution should be stopped
+  // Return true if execution should be stopped, return false if execution
+  // should continue
   using SingleStepProcessor = std::function<bool(lua_State*, lua_Debug* ar)>;
   void processSingleStep(SingleStepProcessor processor);
   void enableDebugStep(bool enable);
@@ -139,6 +144,7 @@ class DebugBridge final {
 
  private:
   friend class LuaCallbacks;
+
   bool stop_on_entry_ = false;
   std::string entry_path_;
 
@@ -155,8 +161,8 @@ class DebugBridge final {
 
   VariableRegistry variable_registry_;
 
-  std::vector<std::function<void()>> main_thread_actions_;
-  std::mutex main_thread_action_mutex_;
+  std::vector<std::function<void()>> deferred_actions_;
+  std::mutex deferred_mutex_;
 
   SingleStepProcessor single_step_processor_ = nullptr;
 

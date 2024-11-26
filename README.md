@@ -36,42 +36,7 @@ See [extensions/vscode/README](./extensions/vscode/README.md)
 
 ## Features
 
-- [ ] Debugger features
-  - [x] Attach
-  - [x] Launch
-  - [x] Stop on entry
-  - [x] Breakpoints
-    - [x] Add break points when running (Considering thread safety)
-  - [x] Continue
-  - [ ] Force break
-  - [x] StackTrace
-    - [ ] StackTrace support coroutine
-  - [x] Scopes
-  - [x] Get variables
-    - [x] Locals
-    - [x] Upvalues
-  - [ ] Display variables
-    - [x] nil
-    - [x] boolean
-    - [x] number
-    - [x] string
-    - [x] table
-      - [x] nested table
-      - [x] table with cycle reference
-    - [x] vector
-    - [x] function
-    - [ ] userdata
-  - [x] Set variables
-  - [x] Repl
-  - [x] Watch
-  - [x] Hover
-  - [x] Single step
-    - [x] Step in
-    - [x] Step over
-    - [x] Step out
-  - [x] Disconnect and reconnect
-  - [ ] Print in debug console
-  - [x] Coroutine
+See [features](./extensions/vscode/README.md#features)
 
 ## Notice
 
