@@ -76,16 +76,6 @@ void File::addBreakPoint(int line) {
   }
 }
 
-void File::removeBreakPoint(int line) {
-  auto it = breakpoints_.find(line);
-  if (it != breakpoints_.end()) {
-    DEBUGGER_LOG_INFO("Remove breakpoint: {}:{}", path_, line);
-    BreakPoint& bp = it->second;
-    enableBreakPoint(bp, false);
-    breakpoints_.erase(it);
-  }
-}
-
 void File::clearBreakPoints() {
   DEBUGGER_LOG_INFO("Clear all breakpoints: {}", path_);
   for (auto& [line, bp] : breakpoints_)

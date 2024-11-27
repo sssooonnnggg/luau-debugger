@@ -7,8 +7,10 @@ target_sources(${library_name}
   src/internal/breakpoint.cpp
   src/internal/file.cpp
   src/internal/debug_bridge.cpp
+  src/internal/lua_statics.cpp
   src/internal/variable.cpp
   src/internal/variable_registry.cpp
+  src/internal/vm_registry.cpp
   src/internal/utils/lua_utils.cpp
 )
 

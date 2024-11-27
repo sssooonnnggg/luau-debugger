@@ -10,13 +10,14 @@
 #include <lualib.h>
 
 #include <dap/protocol.h>
+#include <dap/session.h>
 #include <dap/types.h>
 
-#include <dap/session.h>
 #include <internal/breakpoint.h>
 #include <internal/debug_bridge.h>
 #include <internal/file.h>
 #include <internal/log.h>
+#include <internal/lua_statics.h>
 #include <internal/utils.h>
 #include <internal/variable.h>
 
@@ -24,88 +25,9 @@
 
 namespace luau::debugger {
 
-class LuaCallbacks {
- public:
-  static void debugbreak(lua_State* L, lua_Debug* ar) {
-    auto bridge = DebugBridge::getDebugBridge(L);
-    if (bridge == nullptr)
-      return;
-    bridge->onDebugBreak(L, ar,
-                         bridge->isBreakOnEntry(L)
-                             ? DebugBridge::BreakReason::Entry
-                             : DebugBridge::BreakReason::BreakPoint);
-  };
-
-  static void interrupt(lua_State* L, int gc) {
-    auto bridge = DebugBridge::getDebugBridge(L);
-    if (bridge == nullptr)
-      return;
-    bridge->interruptUpdate();
-  };
-
-  static void userthread(lua_State* LP, lua_State* L) {
-    auto bridge = DebugBridge::getDebugBridge(L);
-    if (bridge == nullptr)
-      return;
-
-    if (LP == nullptr)
-      bridge->markDead(L);
-    else
-      bridge->markAlive(L, LP);
-  };
-
-  static void debugstep(lua_State* L, lua_Debug* ar) {
-    auto bridge = DebugBridge::getDebugBridge(L);
-    if (bridge == nullptr)
-      return;
-    if (bridge->single_step_processor_ != nullptr)
-      if ((bridge->single_step_processor_)(L, ar))
-        bridge->onDebugBreak(L, ar, DebugBridge::BreakReason::Step);
-  };
-
-  static int print(lua_State* L) {
-    int lua_print = lua_upvalueindex(1);
-
-    int args = lua_gettop(L);
-    int begin = lua_absindex(L, -args);
-    int end = lua_absindex(L, -1) + 1;
-
-    lua_checkstack(L, args + 1);
-    lua_pushvalue(L, lua_print);
-    for (int i = begin; i < end; ++i)
-      lua_pushvalue(L, i);
-
-    lua_call(L, args, 0);
-
-    auto bridge = DebugBridge::getDebugBridge(L);
-    if (bridge == nullptr)
-      return 0;
-
-    int n = lua_gettop(L);
-    std::string output;
-    for (int i = 1; i <= n; i++) {
-      size_t l;
-      const char* s = luaL_tolstring(L, i, &l);
-      if (i > 1)
-        output += "\t";
-      output.append(s, l);
-      lua_pop(L, 1);  // pop result
-    }
-    output += "\n";
-
-    bridge->writeDebugConsole(output, L, 1);
-    return 0;
-  }
-};
-
 DebugBridge::DebugBridge(bool stop_on_entry) : stop_on_entry_(stop_on_entry) {}
 
-DebugBridge::~DebugBridge() {
-  for (auto L : lua_vms_)
-    lua_setthreaddata(L, nullptr);
-}
-
-DebugBridge* DebugBridge::getDebugBridge(lua_State* L) {
+DebugBridge* DebugBridge::get(lua_State* L) {
   lua_State* main_vm = lua_mainthread(L);
   auto* debugger = reinterpret_cast<Debugger*>(lua_getthreaddata(main_vm));
   if (debugger == nullptr)
@@ -114,20 +36,19 @@ DebugBridge* DebugBridge::getDebugBridge(lua_State* L) {
 }
 
 void DebugBridge::initialize(lua_State* L) {
-  lua_vms_.push_back(L);
+  vm_registry_.registerVM(L);
 
   initializeCallbacks(L);
   captureOutput(L);
 
   lua_singlestep(L, true);
-  markAlive(L, nullptr);
 }
 
 void DebugBridge::initializeCallbacks(lua_State* L) {
   lua_Callbacks* cb = lua_callbacks(L);
-  cb->debugbreak = LuaCallbacks::debugbreak;
-  cb->interrupt = LuaCallbacks::interrupt;
-  cb->userthread = LuaCallbacks::userthread;
+  cb->debugbreak = LuaStatics::debugbreak;
+  cb->interrupt = LuaStatics::interrupt;
+  cb->userthread = LuaStatics::userthread;
 }
 
 void DebugBridge::captureOutput(lua_State* L) {
@@ -136,7 +57,7 @@ void DebugBridge::captureOutput(lua_State* L) {
   lua_setreadonly(L, LUA_GLOBALSINDEX, false);
   lua_getglobal(L, global_print);
   if (lua_isfunction(L, -1)) {
-    lua_pushcclosure(L, LuaCallbacks::print, "debugprint", 1);
+    lua_pushcclosure(L, LuaStatics::print, "debugprint", 1);
     lua_setglobal(L, global_print);
   }
   lua_setreadonly(L, LUA_GLOBALSINDEX, enable);
@@ -369,10 +290,10 @@ BreakContext DebugBridge::getBreakContext(lua_State* L) const {
 
 int DebugBridge::getStackDepth(lua_State* L) const {
   int depth = lua_stackdepth(L);
-  auto* parent = getParent(L);
+  auto* parent = vm_registry_.getParent(L);
   while (parent != nullptr) {
     depth += lua_stackdepth(parent);
-    parent = getParent(parent);
+    parent = vm_registry_.getParent(parent);
   }
   return depth;
 }
@@ -444,12 +365,12 @@ void DebugBridge::stepOver() {
   auto old_ctx = getBreakContext(break_vm_);
   processSingleStep([this, old_ctx](lua_State* L, lua_Debug* ar) -> bool {
     // Step over yield boundary
-    if (isAlive(old_ctx.L_) && old_ctx.L_->status == LUA_YIELD)
+    if (vm_registry_.isAlive(old_ctx.L_) && old_ctx.L_->status == LUA_YIELD)
       return false;
 
     auto ctx = getBreakContext(L);
 
-    if (L != old_ctx.L_ && !isChild(old_ctx.L_, L))
+    if (L != old_ctx.L_ && !vm_registry_.isChild(old_ctx.L_, L))
       return false;
 
     // Normal step over
@@ -465,14 +386,14 @@ void DebugBridge::processSingleStep(SingleStepProcessor processor) {
 }
 
 void DebugBridge::enableDebugStep(bool enable) {
-  lua_State* L = getRoot(break_vm_);
+  lua_State* L = vm_registry_.getRoot(break_vm_);
   auto callbacks = lua_callbacks(L);
   if (!enable) {
     callbacks->debugstep = nullptr;
     return;
   }
 
-  callbacks->debugstep = LuaCallbacks::debugstep;
+  callbacks->debugstep = LuaStatics::debugstep;
 }
 
 void DebugBridge::resumeInternal() {
@@ -546,43 +467,6 @@ ResponseOrError<EvaluateResponse> DebugBridge::evalWithEnv(
 
   EvaluateResponse response{.result = result};
   return response;
-}
-
-bool DebugBridge::isAlive(lua_State* L) const {
-  return alive_threads_.find(L) != alive_threads_.end();
-}
-
-lua_State* DebugBridge::getParent(lua_State* L) const {
-  auto it = alive_threads_.find(L);
-  if (it == alive_threads_.end())
-    return nullptr;
-  return it->second;
-}
-
-lua_State* DebugBridge::getRoot(lua_State* L) const {
-  lua_State* current = L;
-  while (auto* p = getParent(current))
-    current = p;
-  return current;
-}
-
-bool DebugBridge::isChild(lua_State* L, lua_State* parent) const {
-  lua_State* current = L;
-  while (auto* p = getParent(current)) {
-    if (p == parent)
-      return true;
-    else
-      current = p;
-  }
-  return false;
-}
-
-void DebugBridge::markAlive(lua_State* L, lua_State* parent) {
-  alive_threads_[L] = parent;
-}
-
-void DebugBridge::markDead(lua_State* L) {
-  alive_threads_.erase(L);
 }
 
 void DebugBridge::writeDebugConsole(std::string_view output,

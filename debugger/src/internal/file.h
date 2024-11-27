@@ -31,7 +31,6 @@ class File {
   void addRef(FileRef ref);
 
   void addBreakPoint(int line);
-  void removeBreakPoint(int line);
   void clearBreakPoints();
 
   template <class Predicate>

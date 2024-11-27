@@ -13,8 +13,10 @@
 
 #include <internal/breakpoint.h>
 #include <internal/file.h>
+#include <internal/lua_statics.h>
 #include <internal/variable.h>
 #include <internal/variable_registry.h>
+#include <internal/vm_registry.h>
 
 namespace luau::debugger {
 
@@ -31,9 +33,8 @@ using namespace dap;
 class LuaCallbacks;
 class DebugBridge final {
  public:
-  static DebugBridge* getDebugBridge(lua_State* L);
+  static DebugBridge* get(lua_State* L);
   DebugBridge(bool stop_on_entry);
-  ~DebugBridge();
 
   void initialize(lua_State* L);
   bool isDebugBreak();
@@ -103,6 +104,8 @@ class DebugBridge final {
 
   void writeDebugConsole(std::string_view msg, lua_State* L, int level = 0);
 
+  VMRegistry& vms() { return vm_registry_; }
+
  private:
   void initializeCallbacks(lua_State* L);
   void captureOutput(lua_State* L);
@@ -136,20 +139,14 @@ class DebugBridge final {
 
   ResponseOrError<EvaluateResponse> evalWithEnv(const EvaluateRequest& request);
 
-  bool isAlive(lua_State* L) const;
-  bool isChild(lua_State* L, lua_State* parent) const;
-  lua_State* getParent(lua_State* L) const;
-  lua_State* getRoot(lua_State* L) const;
-  void markAlive(lua_State* L, lua_State* parent);
-  void markDead(lua_State* L);
-
  private:
-  friend class LuaCallbacks;
+  friend class LuaStatics;
+
+  VMRegistry vm_registry_;
 
   bool stop_on_entry_ = false;
   std::string entry_path_;
 
-  std::vector<lua_State*> lua_vms_;
   std::unordered_map<std::string, File> files_;
   lua_State* break_vm_ = nullptr;
 
@@ -166,8 +163,5 @@ class DebugBridge final {
   std::mutex deferred_mutex_;
 
   SingleStepProcessor single_step_processor_ = nullptr;
-
-  // Record alive threads with its parent
-  std::unordered_map<lua_State*, lua_State*> alive_threads_;
 };
 }  // namespace luau::debugger
