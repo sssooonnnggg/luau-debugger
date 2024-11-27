@@ -1,4 +1,5 @@
 #include <lua.h>
+#include <unordered_set>
 #include <utility>
 
 #include <internal/breakpoint.h>
@@ -7,61 +8,60 @@
 
 namespace luau::debugger {
 
-File File::fromLuaState(lua_State* L, std::string_view path) {
-  File file;
-  file.L_ = L;
+FileRef::FileRef(lua_State* L) {
+  L_ = L;
   lua_checkstack(L, 1);
   lua_pushthread(L);
-  file.thread_ref = lua_ref(L, -1);
+  thread_ref_ = lua_ref(L, -1);
   lua_pop(L, 1);
-  file.file_ref_ = lua_ref(L, -1);
-  file.path_ = path;
-  return file;
+  file_ref_ = lua_ref(L, -1);
 }
 
-File File::fromBreakPoints(std::string_view path,
-                           std::unordered_map<int, BreakPoint> breakpoints) {
-  File file;
-  file.path_ = path;
-  file.breakpoints_ = breakpoints;
-  return file;
+FileRef::~FileRef() {
+  lua_unref(L_, file_ref_);
+  lua_unref(L_, thread_ref_);
 }
 
-File::~File() {
-  if (isLoaded()) {
-    lua_unref(L_, file_ref_);
-    lua_unref(L_, thread_ref);
-  }
-}
-
-File::File(File&& other) {
+FileRef::FileRef(const FileRef& other) {
   L_ = other.L_;
-  file_ref_ = other.file_ref_;
-  path_ = std::move(other.path_);
-  breakpoints_ = std::move(other.breakpoints_);
-
-  other.L_ = nullptr;
-  other.file_ref_ = LUA_REFNIL;
+  lua_checkstack(L_, 1);
+  lua_getref(L_, other.thread_ref_);
+  thread_ref_ = lua_ref(L_, -1);
+  lua_pop(L_, 1);
+  lua_getref(L_, other.file_ref_);
+  file_ref_ = lua_ref(L_, -1);
+  lua_pop(L_, 1);
 }
 
-File& File::operator=(File&& other) {
-  if (this != &other) {
-    if (isLoaded())
-      lua_unref(L_, file_ref_);
+void File::setPath(std::string path) {
+  path_ = std::move(path);
+}
 
-    L_ = other.L_;
-    file_ref_ = other.file_ref_;
-    path_ = std::move(other.path_);
-    breakpoints_ = std::move(other.breakpoints_);
+std::string_view File::path() const {
+  return path_;
+}
 
-    other.L_ = nullptr;
-    other.file_ref_ = LUA_REFNIL;
+void File::setBreakPoints(
+    const std::unordered_map<int, BreakPoint>& breakpoints) {
+  std::unordered_set<int> settled;
+  for (const auto& [_, bp] : breakpoints) {
+    addBreakPoint(bp.line());
+    settled.insert(bp.line());
   }
-  return *this;
+  removeBreakPointsIf([&settled](const BreakPoint& bp) {
+    return settled.find(bp.line()) == settled.end();
+  });
 }
 
-bool File::isLoaded() const {
-  return L_ != nullptr;
+void File::addRef(FileRef ref) {
+  for (auto& [_, bp] : breakpoints_)
+    bp.enable(ref.L_, ref.file_ref_, true);
+  refs_.emplace_back(std::move(ref));
+}
+
+void File::enableBreakPoint(BreakPoint& bp, bool enable) {
+  for (const auto& ref : refs_)
+    bp.enable(ref.L_, ref.file_ref_, enable);
 }
 
 void File::addBreakPoint(int line) {
@@ -69,8 +69,7 @@ void File::addBreakPoint(int line) {
   if (it == breakpoints_.end()) {
     DEBUGGER_LOG_INFO("Add breakpoint: {}:{}", path_, line);
     auto bp = BreakPoint::create(line);
-    if (isLoaded())
-      bp.enable(L_, file_ref_, true);
+    enableBreakPoint(bp, true);
     breakpoints_.emplace(line, std::move(bp));
   } else {
     DEBUGGER_LOG_INFO("Breakpoint already exists, ignore: {}:{}", path_, line);
@@ -81,27 +80,17 @@ void File::removeBreakPoint(int line) {
   auto it = breakpoints_.find(line);
   if (it != breakpoints_.end()) {
     DEBUGGER_LOG_INFO("Remove breakpoint: {}:{}", path_, line);
-    if (isLoaded())
-      it->second.enable(L_, file_ref_, false);
+    BreakPoint& bp = it->second;
+    enableBreakPoint(bp, false);
     breakpoints_.erase(it);
   }
 }
 
 void File::clearBreakPoints() {
   DEBUGGER_LOG_INFO("Clear all breakpoints: {}", path_);
-  for (auto& [line, bp] : breakpoints_) {
-    if (isLoaded())
-      bp.enable(L_, file_ref_, false);
-  }
+  for (auto& [line, bp] : breakpoints_)
+    enableBreakPoint(bp, false);
   breakpoints_.clear();
-}
-
-void File::syncBreakpoints(const File& other) {
-  breakpoints_ = other.breakpoints_;
-
-  if (isLoaded())
-    for (auto& [line, bp] : breakpoints_)
-      bp.enable(L_, file_ref_, true);
 }
 
 }  // namespace luau::debugger

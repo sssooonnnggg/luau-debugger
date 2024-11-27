@@ -3,25 +3,32 @@
 #include <lua.h>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include <internal/breakpoint.h>
 #include <internal/utils.h>
 
 namespace luau::debugger {
+struct FileRef final {
+  FileRef(lua_State* L);
+  ~FileRef();
+
+  FileRef(const FileRef&);
+  FileRef& operator=(const FileRef&);
+  auto operator<=>(const FileRef&) const = default;
+
+  lua_State* L_ = nullptr;
+  int file_ref_ = LUA_REFNIL;
+  int thread_ref_ = LUA_REFNIL;
+};
+
 class File {
  public:
-  File() = default;
-  ~File();
+  void setPath(std::string path);
+  std::string_view path() const;
 
-  File(const File&) = delete;
-  File(File&& other);
-
-  File& operator=(File&& other);
-
-  static File fromLuaState(lua_State* L, std::string_view path);
-  static File fromBreakPoints(std::string_view path,
-                              std::unordered_map<int, BreakPoint> breakpoints);
-  bool isLoaded() const;
+  void setBreakPoints(const std::unordered_map<int, BreakPoint>& breakpoints);
+  void addRef(FileRef ref);
 
   void addBreakPoint(int line);
   void removeBreakPoint(int line);
@@ -30,14 +37,13 @@ class File {
   template <class Predicate>
   void removeBreakPointsIf(Predicate pred);
 
-  void syncBreakpoints(const File& other);
+ private:
+  void enableBreakPoint(BreakPoint& bp, bool enable);
 
  private:
-  lua_State* L_ = nullptr;
-  int thread_ref = LUA_REFNIL;
-  int file_ref_ = LUA_REFNIL;
   std::string path_;
   std::unordered_map<int, BreakPoint> breakpoints_;
+  std::vector<FileRef> refs_;
 };
 
 template <class Predicate>
@@ -45,8 +51,7 @@ void File::removeBreakPointsIf(Predicate pred) {
   for (auto it = breakpoints_.begin(); it != breakpoints_.end();) {
     if (pred(it->second)) {
       DEBUGGER_LOG_INFO("Remove breakpoint: {}:{}", path_, it->first);
-      if (isLoaded())
-        it->second.enable(L_, file_ref_, false);
+      enableBreakPoint(it->second, false);
       it = breakpoints_.erase(it);
     } else {
       ++it;

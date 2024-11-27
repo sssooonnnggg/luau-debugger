@@ -4,7 +4,6 @@
 #include <mutex>
 #include <optional>
 #include <unordered_map>
-#include <unordered_set>
 
 #include <lstate.h>
 #include <lua.h>
@@ -16,6 +15,7 @@
 #include <dap/session.h>
 #include <internal/breakpoint.h>
 #include <internal/debug_bridge.h>
+#include <internal/file.h>
 #include <internal/log.h>
 #include <internal/utils.h>
 #include <internal/variable.h>
@@ -101,8 +101,8 @@ class LuaCallbacks {
 DebugBridge::DebugBridge(bool stop_on_entry) : stop_on_entry_(stop_on_entry) {}
 
 DebugBridge::~DebugBridge() {
-  if (main_vm_ != nullptr)
-    lua_setthreaddata(main_vm_, nullptr);
+  for (auto L : lua_vms_)
+    lua_setthreaddata(L, nullptr);
 }
 
 DebugBridge* DebugBridge::getDebugBridge(lua_State* L) {
@@ -114,32 +114,32 @@ DebugBridge* DebugBridge::getDebugBridge(lua_State* L) {
 }
 
 void DebugBridge::initialize(lua_State* L) {
-  main_vm_ = L;
+  lua_vms_.push_back(L);
 
-  initializeCallbacks();
-  captureOutput();
+  initializeCallbacks(L);
+  captureOutput(L);
 
   lua_singlestep(L, true);
   markAlive(L, nullptr);
 }
 
-void DebugBridge::initializeCallbacks() {
-  lua_Callbacks* cb = lua_callbacks(main_vm_);
+void DebugBridge::initializeCallbacks(lua_State* L) {
+  lua_Callbacks* cb = lua_callbacks(L);
   cb->debugbreak = LuaCallbacks::debugbreak;
   cb->interrupt = LuaCallbacks::interrupt;
   cb->userthread = LuaCallbacks::userthread;
 }
 
-void DebugBridge::captureOutput() {
+void DebugBridge::captureOutput(lua_State* L) {
   const char* global_print = "print";
-  auto enable = lua_getreadonly(main_vm_, LUA_GLOBALSINDEX);
-  lua_setreadonly(main_vm_, LUA_GLOBALSINDEX, false);
-  lua_getglobal(main_vm_, global_print);
-  if (lua_isfunction(main_vm_, -1)) {
-    lua_pushcclosure(main_vm_, LuaCallbacks::print, "debugprint", 1);
-    lua_setglobal(main_vm_, global_print);
+  auto enable = lua_getreadonly(L, LUA_GLOBALSINDEX);
+  lua_setreadonly(L, LUA_GLOBALSINDEX, false);
+  lua_getglobal(L, global_print);
+  if (lua_isfunction(L, -1)) {
+    lua_pushcclosure(L, LuaCallbacks::print, "debugprint", 1);
+    lua_setglobal(L, global_print);
   }
-  lua_setreadonly(main_vm_, LUA_GLOBALSINDEX, enable);
+  lua_setreadonly(L, LUA_GLOBALSINDEX, enable);
 }
 
 bool DebugBridge::isDebugBreak() {
@@ -160,8 +160,6 @@ void DebugBridge::onDebugBreak(lua_State* L,
           "Session is not initialized, wait for client connection");
       session_cv_.wait(lock, [this] { return session_ != nullptr; });
     }
-    if (auto file = files_.find(entry_path_); file != files_.end())
-      file->second.removeBreakPoint(1);
   } else if (session_ == nullptr) {
     DEBUGGER_LOG_INFO("Session is lost, ignore breakpoints");
     return;
@@ -290,26 +288,26 @@ void DebugBridge::onLuaFileLoaded(lua_State* L,
                                   std::string_view path,
                                   bool is_entry) {
   auto normalized_path = normalizePath(path);
-  auto file = File::fromLuaState(L, normalized_path);
-
-  if (is_entry && stop_on_entry_) {
-    file.addBreakPoint(1);
-    entry_path_ = normalized_path;
-  }
 
   auto it = files_.find(normalized_path);
   if (it == files_.end()) {
+    File file;
+    file.setPath(normalized_path);
+    file.addRef(FileRef(L));
+
     DEBUGGER_LOG_INFO("[onLuaFileLoaded] New file loaded: {}", normalized_path);
-    files_.emplace(normalized_path, std::move(file));
+    it = files_.emplace(normalized_path, std::move(file)).first;
   } else {
     DEBUGGER_LOG_INFO(
         "[onLuaFileLoaded] File already loaded, replace with new: {}",
         normalized_path);
 
-    auto& old_file = it->second;
-    file.syncBreakpoints(old_file);
+    it->second.addRef(FileRef(L));
+  }
 
-    it->second = std::move(file);
+  if (is_entry && stop_on_entry_) {
+    it->second.addBreakPoint(1);
+    entry_path_ = normalized_path;
   }
 }
 
@@ -317,6 +315,7 @@ void DebugBridge::setBreakPoints(
     std::string_view path,
     optional<array<SourceBreakpoint>> breakpoints) {
   auto normalized_path = normalizePath(path);
+
   // Clear all breakpoints
   if (!breakpoints.has_value()) {
     DEBUGGER_LOG_INFO("[setBreakPoint] clear all breakpoints: {}",
@@ -329,32 +328,24 @@ void DebugBridge::setBreakPoints(
   }
 
   auto it = files_.find(normalized_path);
+  std::unordered_map<int, BreakPoint> bps;
+  for (const auto& bp : *breakpoints)
+    bps.emplace(static_cast<int>(bp.line), BreakPoint::create(bp.line));
 
-  // New file with breakpoints
   if (it == files_.end()) {
     DEBUGGER_LOG_INFO("[setBreakPoint] create new file with breakpoints: {}",
                       normalized_path);
-    std::unordered_map<int, BreakPoint> bps;
-    for (const auto& bp : *breakpoints)
-      bps.emplace(static_cast<int>(bp.line), BreakPoint::create(bp.line));
 
-    files_.emplace(normalized_path, File::fromBreakPoints(path, bps));
-    return;
-  }
+    File file;
+    file.setPath(normalized_path);
+    it = files_.emplace(normalized_path, File()).first;
+  } else
+    DEBUGGER_LOG_INFO("[setBreakPoint] file already loaded: {}",
+                      normalized_path);
 
   // Update existing file with breakpoints
-  std::unordered_set<int> settled;
   auto& file = it->second;
-
-  DEBUGGER_LOG_INFO("[setBreakPoint] file loaded and registered: {}",
-                    normalized_path);
-  for (const auto& bp : *breakpoints) {
-    file.addBreakPoint(bp.line);
-    settled.insert(bp.line);
-  }
-  file.removeBreakPointsIf([&settled](const BreakPoint& bp) {
-    return settled.find(bp.line()) == settled.end();
-  });
+  file.setBreakPoints(bps);
 }
 
 std::string DebugBridge::normalizePath(std::string_view path) const {
@@ -474,7 +465,8 @@ void DebugBridge::processSingleStep(SingleStepProcessor processor) {
 }
 
 void DebugBridge::enableDebugStep(bool enable) {
-  auto callbacks = lua_callbacks(main_vm_);
+  lua_State* L = getRoot(break_vm_);
+  auto callbacks = lua_callbacks(L);
   if (!enable) {
     callbacks->debugstep = nullptr;
     return;
@@ -565,6 +557,13 @@ lua_State* DebugBridge::getParent(lua_State* L) const {
   if (it == alive_threads_.end())
     return nullptr;
   return it->second;
+}
+
+lua_State* DebugBridge::getRoot(lua_State* L) const {
+  lua_State* current = L;
+  while (auto* p = getParent(current))
+    current = p;
+  return current;
 }
 
 bool DebugBridge::isChild(lua_State* L, lua_State* parent) const {

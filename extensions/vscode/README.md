@@ -68,6 +68,9 @@ A debugger for Luau with debug adapter protocol(DAP) support.
   - [x] Stop on entry
   - [x] Breakpoints
     - [x] Add break points when running (Considering thread safety)
+    - [ ] Conditional breakpoints
+    - [ ] Data breakpoints
+    - [ ] Breakpoint hit count
   - [x] Continue
   - [ ] Force break
   - [x] StackTrace

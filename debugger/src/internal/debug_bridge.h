@@ -104,8 +104,8 @@ class DebugBridge final {
   void writeDebugConsole(std::string_view msg, lua_State* L, int level = 0);
 
  private:
-  void initializeCallbacks();
-  void captureOutput();
+  void initializeCallbacks(lua_State* L);
+  void captureOutput(lua_State* L);
 
   std::string normalizePath(std::string_view path) const;
   bool isBreakOnEntry(lua_State* L) const;
@@ -139,6 +139,7 @@ class DebugBridge final {
   bool isAlive(lua_State* L) const;
   bool isChild(lua_State* L, lua_State* parent) const;
   lua_State* getParent(lua_State* L) const;
+  lua_State* getRoot(lua_State* L) const;
   void markAlive(lua_State* L, lua_State* parent);
   void markDead(lua_State* L);
 
@@ -148,8 +149,8 @@ class DebugBridge final {
   bool stop_on_entry_ = false;
   std::string entry_path_;
 
+  std::vector<lua_State*> lua_vms_;
   std::unordered_map<std::string, File> files_;
-  lua_State* main_vm_ = nullptr;
   lua_State* break_vm_ = nullptr;
 
   std::mutex break_mutex_;

@@ -28,16 +28,25 @@ int main(int argc, char** argv) {
     fprintf(stderr, "%s", msg.data());
   };
 
-  luau::Runtime runtime;
   luau::debugger::log::install(log_handler, error_handler);
   luau::debugger::Debugger debugger(true);
+  debugger.listen(std::atoi(argv[1]));
 
+  luau::Runtime runtime;
   runtime.setErrorHandler(error_handler);
   runtime.installLibrary();
   runtime.installDebugger(&debugger);
-
-  debugger.listen(std::atoi(argv[1]));
   int result = runtime.runFile(argv[2]);
+
+#if defined(MULTIPLY_VM_TEST)
+  luau::Runtime runtime2;
+  runtime2.setErrorHandler(error_handler);
+  runtime2.installLibrary();
+  runtime2.installDebugger(&debugger);
+  result = runtime2.runFile(argv[2]);
+#endif
+
   debugger.stop();
+
   return result ? 0 : -1;
 }
