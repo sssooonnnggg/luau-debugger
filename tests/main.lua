@@ -112,6 +112,17 @@ local function test_print()
     print(number, string, vector)
 end
 
+local function test_condition()
+    for i = 1, 10 do
+        print(i)
+    end
+    local str = "hello, debugger"
+    for i = 1, #str do
+        local a = string.sub(str, 1, i)
+        print(a)
+    end
+end
+
 local function main()
     test_variables()
     test_step()
@@ -119,6 +130,7 @@ local function main()
     test_math()
     test_print()
     test_error()
+    test_condition()
     print('=============================================')
 end
 

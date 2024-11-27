@@ -30,11 +30,14 @@ class File {
   void setBreakPoints(const std::unordered_map<int, BreakPoint>& breakpoints);
   void addRef(FileRef ref);
 
+  void addBreakPoint(const BreakPoint& bp);
   void addBreakPoint(int line);
   void clearBreakPoints();
 
   template <class Predicate>
   void removeBreakPointsIf(Predicate pred);
+
+  BreakPoint* findBreakPoint(int line);
 
  private:
   void enableBreakPoint(BreakPoint& bp, bool enable);

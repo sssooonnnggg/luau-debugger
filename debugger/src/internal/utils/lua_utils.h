@@ -24,4 +24,16 @@ bool setLocal(lua_State* L, int level, const std::string& name, int index);
 
 bool setUpvalue(lua_State* L, int level, const std::string& name, int index);
 
+class StackGuard {
+ public:
+  StackGuard(lua_State* L, int capacity = 5) : L_(L), top_(lua_gettop(L)) {
+    lua_checkstack(L, capacity);
+  }
+  ~StackGuard() { lua_settop(L_, top_); }
+
+ private:
+  lua_State* L_;
+  int top_;
+};
+
 }  // namespace luau::debugger::lua_utils

@@ -139,6 +139,8 @@ class DebugBridge final {
 
   ResponseOrError<EvaluateResponse> evalWithEnv(const EvaluateRequest& request);
 
+  BreakPoint* findBreakPoint(lua_State* L);
+
  private:
   friend class LuaStatics;
 

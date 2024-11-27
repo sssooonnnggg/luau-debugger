@@ -45,7 +45,7 @@ void File::setBreakPoints(
     const std::unordered_map<int, BreakPoint>& breakpoints) {
   std::unordered_set<int> settled;
   for (const auto& [_, bp] : breakpoints) {
-    addBreakPoint(bp.line());
+    addBreakPoint(bp);
     settled.insert(bp.line());
   }
   removeBreakPointsIf([&settled](const BreakPoint& bp) {
@@ -65,14 +65,19 @@ void File::enableBreakPoint(BreakPoint& bp, bool enable) {
 }
 
 void File::addBreakPoint(int line) {
-  auto it = breakpoints_.find(line);
+  addBreakPoint(BreakPoint::create(line));
+}
+
+void File::addBreakPoint(const BreakPoint& bp) {
+  auto it = breakpoints_.find(bp.line());
   if (it == breakpoints_.end()) {
-    DEBUGGER_LOG_INFO("Add breakpoint: {}:{}", path_, line);
-    auto bp = BreakPoint::create(line);
-    enableBreakPoint(bp, true);
-    breakpoints_.emplace(line, std::move(bp));
+    DEBUGGER_LOG_INFO("Add breakpoint: {}:{}", path_, bp.line());
+    auto inserted = breakpoints_.emplace(bp.line(), bp).first;
+    enableBreakPoint(inserted->second, true);
   } else {
-    DEBUGGER_LOG_INFO("Breakpoint already exists, ignore: {}:{}", path_, line);
+    it->second = bp;
+    DEBUGGER_LOG_INFO("Breakpoint already exists, update it: {}:{}", path_,
+                      bp.line());
   }
 }
 
@@ -81,6 +86,13 @@ void File::clearBreakPoints() {
   for (auto& [line, bp] : breakpoints_)
     enableBreakPoint(bp, false);
   breakpoints_.clear();
+}
+
+BreakPoint* File::findBreakPoint(int line) {
+  auto it = breakpoints_.find(line);
+  if (it == breakpoints_.end())
+    return nullptr;
+  return &it->second;
 }
 
 }  // namespace luau::debugger

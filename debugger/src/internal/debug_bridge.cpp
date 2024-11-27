@@ -85,6 +85,24 @@ void DebugBridge::onDebugBreak(lua_State* L,
     DEBUGGER_LOG_INFO("Session is lost, ignore breakpoints");
     return;
   }
+
+  if (reason == BreakReason::BreakPoint) {
+    if (auto* bp = findBreakPoint(L)) {
+      auto hit_result = bp->hit(L);
+      if (hit_result.isError()) {
+        // Encountered error when evaluating breakpoint condition
+        writeDebugConsole(
+            log::formatError("Failed to evaluate breakpoint condition: {}",
+                             hit_result.error()),
+            L);
+        return;
+      } else if (!hit_result.value()) {
+        // Condition not met
+        return;
+      }
+    }
+  }
+
   session_->send(event);
 
   break_vm_ = L;
@@ -245,13 +263,17 @@ void DebugBridge::setBreakPoints(
     if (it == files_.end())
       return;
     it->second.clearBreakPoints();
-    files_.erase(it);
+    return;
   }
 
   auto it = files_.find(normalized_path);
   std::unordered_map<int, BreakPoint> bps;
-  for (const auto& bp : *breakpoints)
-    bps.emplace(static_cast<int>(bp.line), BreakPoint::create(bp.line));
+  for (const auto& breakpoint : *breakpoints) {
+    auto bp = BreakPoint::create(breakpoint.line);
+    if (breakpoint.condition.has_value())
+      bp.setCondition(breakpoint.condition.value());
+    bps.emplace(static_cast<int>(breakpoint.line), std::move(bp));
+  }
 
   if (it == files_.end()) {
     DEBUGGER_LOG_INFO("[setBreakPoint] create new file with breakpoints: {}",
@@ -264,7 +286,6 @@ void DebugBridge::setBreakPoints(
     DEBUGGER_LOG_INFO("[setBreakPoint] file already loaded: {}",
                       normalized_path);
 
-  // Update existing file with breakpoints
   auto& file = it->second;
   file.setBreakPoints(bps);
 }
@@ -485,6 +506,17 @@ void DebugBridge::writeDebugConsole(std::string_view output,
   }
 
   session_->send(std::move(event));
+}
+
+BreakPoint* DebugBridge::findBreakPoint(lua_State* L) {
+  lua_Debug ar;
+  lua_getinfo(L, 0, "sl", &ar);
+  auto it = files_.find(normalizePath(ar.source));
+  if (it == files_.end())
+    return nullptr;
+
+  auto& file = it->second;
+  return file.findBreakPoint(ar.currentline);
 }
 
 }  // namespace luau::debugger

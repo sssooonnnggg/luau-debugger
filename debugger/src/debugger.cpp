@@ -128,6 +128,7 @@ void Debugger::registerInitializeHandler() {
     response.supportsExceptionOptions = false;
     response.supportsDelayedStackTraceLoading = false;
     response.supportsSetVariable = true;
+    response.supportsConditionalBreakpoints = true;
     return response;
   });
   session_->registerSentHandler(

@@ -68,7 +68,7 @@ A debugger for Luau with debug adapter protocol(DAP) support.
   - [x] Stop on entry
   - [x] Breakpoints
     - [x] Add break points when running (Considering thread safety)
-    - [ ] Conditional breakpoints
+    - [x] Conditional breakpoints
     - [ ] Data breakpoints
     - [ ] Breakpoint hit count
   - [x] Continue
@@ -102,4 +102,4 @@ A debugger for Luau with debug adapter protocol(DAP) support.
   - [x] Disconnect and reconnect
   - [x] Print to debug console
   - [x] Coroutine
-  - [ ] Multiply lua vm
+  - [x] Multiple lua vm

@@ -26,6 +26,14 @@ inline void debug_break() {
     ::DebugBreak();
 #endif
 }
+
+template <class... Types>
+decltype(auto) formatError(const std::format_string<Types...> format,
+                           Types&&... args) {
+  return std::string("\x1B[31m") +
+         std::format(format, std::forward<Types>(args)...) + "\033[0m\n";
+}
+
 }  // namespace luau::debugger::log
 
 #if defined(_MSC_VER) && !defined(__clang__)
