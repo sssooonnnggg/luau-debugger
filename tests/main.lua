@@ -124,6 +124,19 @@ local function test_condition()
     end
 end
 
+local function test_self()
+    local mt = {
+        base = 100,
+    }
+    function mt:add(a)
+        self.base = self.base + a
+        print(self.base)
+    end
+
+    mt:add(300)
+    mt:add(200)
+end
+
 local function main()
     test_variables()
     test_step()
@@ -132,6 +145,7 @@ local function main()
     test_print()
     test_error()
     test_condition()
+    test_self()
     print('=============================================')
 end
 

@@ -13,6 +13,7 @@ namespace luau::debugger {
 
 class VariableRegistry {
  public:
+  void clear();
   void update(lua_State* L);
 
   std::vector<Variable>* getLocals(int level);
@@ -35,6 +36,7 @@ class VariableRegistry {
 
  private:
   std::unordered_map<Scope, std::vector<Variable>> variables_;
+  int depth_ = 0;
 };
 
 }  // namespace luau::debugger

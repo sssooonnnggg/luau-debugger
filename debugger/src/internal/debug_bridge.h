@@ -75,6 +75,8 @@ class DebugBridge final {
   ResponseOrError<SetVariableResponse> setVariable(
       const SetVariableRequest& request);
 
+  void updateVariables();
+
   // Called from **DAP** client to step to next line
   void stepOver();
 
@@ -139,6 +141,7 @@ class DebugBridge final {
 
   ResponseOrError<EvaluateResponse> evalWithEnv(const EvaluateRequest& request);
 
+  bool hitBreakPoint(lua_State* L);
   BreakPoint* findBreakPoint(lua_State* L);
 
  private:
@@ -150,8 +153,8 @@ class DebugBridge final {
   std::string entry_path_;
 
   std::unordered_map<std::string, File> files_;
-  lua_State* break_vm_ = nullptr;
 
+  lua_State* break_vm_ = nullptr;
   std::mutex break_mutex_;
   bool resume_ = false;
   std::condition_variable resume_cv_;

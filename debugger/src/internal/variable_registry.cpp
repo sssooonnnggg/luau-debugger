@@ -49,12 +49,15 @@ std::pair<const Scope, std::vector<Variable>>* VariableRegistry::getVariables(
   return &(*it);
 }
 
-void VariableRegistry::update(lua_State* L) {
+void VariableRegistry::clear() {
   variables_.clear();
+  depth_ = 0;
+}
 
+void VariableRegistry::update(lua_State* L) {
   int stack_depth = lua_stackdepth(L);
 
-  for (int level = 0; level < stack_depth; ++level)
+  for (int level = 0; level < stack_depth; ++level, ++depth_)
     updateStack(L, level);
 }
 
@@ -74,7 +77,7 @@ void VariableRegistry::updateStack(lua_State* L, int level) {
     variables.emplace_back(createVariable(L, name, level));
     lua_pop(L, 1);
   }
-  registerVariables(getLocalScope(level), variables);
+  registerVariables(getLocalScope(depth_), variables);
 
   // Register upvalues
   lua_Debug ar = {};
@@ -86,7 +89,7 @@ void VariableRegistry::updateStack(lua_State* L, int level) {
     lua_pop(L, 1);
   }
   lua_pop(L, 1);
-  registerVariables(getUpvalueScope(level), upvalues);
+  registerVariables(getUpvalueScope(depth_), upvalues);
 }
 
 std::vector<Variable>* VariableRegistry::getLocals(int level) {

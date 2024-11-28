@@ -86,22 +86,8 @@ void DebugBridge::onDebugBreak(lua_State* L,
     return;
   }
 
-  if (reason == BreakReason::BreakPoint) {
-    if (auto* bp = findBreakPoint(L)) {
-      auto hit_result = bp->hit(L);
-      if (hit_result.isError()) {
-        // Encountered error when evaluating breakpoint condition
-        writeDebugConsole(
-            log::formatError("Failed to evaluate breakpoint condition: {}",
-                             hit_result.error()),
-            L);
-        return;
-      } else if (!hit_result.value()) {
-        // Condition not met
-        return;
-      }
-    }
-  }
+  if (reason == BreakReason::BreakPoint && !hitBreakPoint(L))
+    return;
 
   session_->send(event);
 
@@ -131,7 +117,7 @@ StackTraceResponse DebugBridge::getStackTrace() {
   StackTraceResponse response;
   lua_State* L = break_vm_;
 
-  variable_registry_.update(break_vm_);
+  updateVariables();
 
   lua_Debug ar;
   for (int level = 0; lua_getinfo(L, level, "sln", &ar); ++level) {
@@ -426,10 +412,8 @@ void DebugBridge::resumeInternal() {
 
 ResponseOrError<EvaluateResponse> DebugBridge::evaluate(
     const EvaluateRequest& request) {
-  if (!isDebugBreak()) {
-    // TODO: support evaluate when not in debug break
+  if (!isDebugBreak())
     return Error{"Evaluate request is not allowed when not in debug break"};
-  }
 
   if (!request.context.has_value())
     return Error{"Evaluate request must have context"};
@@ -508,6 +492,24 @@ void DebugBridge::writeDebugConsole(std::string_view output,
   session_->send(std::move(event));
 }
 
+bool DebugBridge::hitBreakPoint(lua_State* L) {
+  auto* bp = findBreakPoint(L);
+  if (bp == nullptr)
+    return true;
+
+  auto hit_result = bp->hit(L);
+  if (hit_result.isError()) {
+    // Encountered error when evaluating breakpoint condition
+    writeDebugConsole(
+        log::formatError("Failed to evaluate breakpoint condition: {}",
+                         hit_result.error()),
+        L);
+    return true;
+  }
+
+  return hit_result.value();
+}
+
 BreakPoint* DebugBridge::findBreakPoint(lua_State* L) {
   lua_Debug ar;
   lua_getinfo(L, 0, "sl", &ar);
@@ -517,6 +519,11 @@ BreakPoint* DebugBridge::findBreakPoint(lua_State* L) {
 
   auto& file = it->second;
   return file.findBreakPoint(ar.currentline);
+}
+
+void DebugBridge::updateVariables() {
+  variable_registry_.clear();
+  variable_registry_.update(break_vm_);
 }
 
 }  // namespace luau::debugger

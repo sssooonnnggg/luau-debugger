@@ -73,6 +73,7 @@ class Debugger {
 #undef REGISTER_HANDLER
 
   void closeSession();
+  void invalidateVariables();
 
  private:
   friend class DebugBridge;

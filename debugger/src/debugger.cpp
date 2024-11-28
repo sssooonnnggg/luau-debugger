@@ -249,10 +249,8 @@ void Debugger::registerSetVariableHandler() {
       });
   session_->registerSentHandler(
       [&](const dap::ResponseOrError<dap::SetVariableResponse>& res) {
-        // Invalidate variables
         if (!res.error)
-          session_->send(dap::InvalidatedEvent{
-              .areas = std::vector<std::string>{"stacks"}});
+          invalidateVariables();
       });
 }
 
@@ -291,9 +289,16 @@ void Debugger::registerEvaluateHandler() {
       [&](const dap::ResponseOrError<dap::EvaluateResponse>& res) {
         // Invalidate variables
         if (!res.error)
-          session_->send(dap::InvalidatedEvent{
-              .areas = std::vector<std::string>{"stacks"}});
+          invalidateVariables();
       });
+}
+
+void Debugger::invalidateVariables() {
+  if (session_) {
+    debug_bridge_->updateVariables();
+    session_->send(
+        dap::InvalidatedEvent{.areas = std::vector<std::string>{"variables"}});
+  }
 }
 
 }  // namespace luau::debugger
