@@ -1,9 +1,10 @@
 #pragma once
-
-#include <lua.h>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include <lobject.h>
+#include <lua.h>
 
 #include <internal/breakpoint.h>
 #include <internal/utils.h>
@@ -13,11 +14,12 @@ struct FileRef final {
   FileRef(lua_State* L);
   ~FileRef();
 
-  FileRef(const FileRef&);
-  FileRef& operator=(const FileRef&);
-  auto operator<=>(const FileRef&) const = default;
+  FileRef(const FileRef& other);
+  FileRef& operator=(const FileRef& other);
+  bool operator==(const FileRef& other) const;
 
   lua_State* L_ = nullptr;
+  Closure* func_ = nullptr;
   int file_ref_ = LUA_REFNIL;
   int thread_ref_ = LUA_REFNIL;
 };

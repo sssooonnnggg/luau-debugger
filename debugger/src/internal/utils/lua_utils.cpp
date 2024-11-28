@@ -1,7 +1,12 @@
+#include <optional>
+
+#include <lapi.h>
+#include <lobject.h>
+#include <lstate.h>
+#include <lua.h>
+
 #include <internal/utils.h>
 #include <internal/utils/lua_utils.h>
-#include <lua.h>
-#include <optional>
 
 namespace luau::debugger::lua_utils {
 
@@ -200,6 +205,11 @@ bool setUpvalue(lua_State* L, int level, const std::string& name, int index) {
   }
   lua_pop(L, 1);
   return false;
+}
+
+Closure* getFunction(lua_State* L, int index) {
+  auto o = luaA_toobject(L, index);
+  return isLfunction(o) ? clvalue(o) : nullptr;
 }
 
 }  // namespace luau::debugger::lua_utils

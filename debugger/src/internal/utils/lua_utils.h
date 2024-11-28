@@ -1,10 +1,11 @@
 #pragma once
 
+#include <Luau/BytecodeBuilder.h>
 #include <Luau/Common.h>
 #include <Luau/Compiler.h>
+#include <lobject.h>
 #include <lua.h>
 
-#include <Luau/BytecodeBuilder.h>
 #include <internal/log.h>
 
 namespace luau::debugger::lua_utils {
@@ -23,6 +24,8 @@ bool pushBreakEnv(lua_State* L, int level);
 bool setLocal(lua_State* L, int level, const std::string& name, int index);
 
 bool setUpvalue(lua_State* L, int level, const std::string& name, int index);
+
+Closure* getFunction(lua_State* L, int index);
 
 class StackGuard {
  public:

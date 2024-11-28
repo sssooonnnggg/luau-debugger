@@ -1,7 +1,6 @@
 #pragma once
-#include <string>
-
 #include <lua.h>
+#include <string>
 
 #include <internal/utils.h>
 
