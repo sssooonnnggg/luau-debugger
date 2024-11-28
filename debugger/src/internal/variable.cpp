@@ -63,7 +63,10 @@ std::string Variable::setValue(Scope scope, const std::string& value) {
       // -3: value
       // -4: env
       lua_checkstack(L_, 2);
-      lua_pushstring(L_, name_.data());
+      if (index_.has_value())
+        lua_pushinteger(L_, index_.value());
+      else
+        lua_pushstring(L_, name_.data());
       lua_pushvalue(L_, -3);
       lua_settable(L_, -3);
       lua_pop(L_, 3);
@@ -113,7 +116,10 @@ void Variable::registryTableFields(luau::debugger::VariableRegistry* registry,
   lua_pushnil(L);
   while (lua_next(L, -2)) {
     std::string field_name = lua_utils::toString(L, -2);
-    variables.emplace_back(registry->createVariable(L, field_name, level_));
+    auto variable = registry->createVariable(L, field_name, level_);
+    if (lua_isnumber(L, -2))
+      variable.index_ = lua_tointeger(L, -2);
+    variables.emplace_back(variable);
     lua_pop(L, 1);
   }
 }

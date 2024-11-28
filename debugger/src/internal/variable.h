@@ -1,7 +1,8 @@
 #pragma once
+#include <optional>
+#include <string>
 
 #include <lua.h>
-#include <string>
 
 #include <internal/scope.h>
 
@@ -30,6 +31,7 @@ class Variable {
   lua_State* L_ = nullptr;
   int level_ = 0;
   std::string name_;
+  std::optional<int> index_ = std::nullopt;
   std::string value_;
   Scope scope_;
   int type_ = LUA_TNIL;
