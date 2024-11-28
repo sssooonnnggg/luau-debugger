@@ -144,6 +144,8 @@ class DebugBridge final {
   bool hitBreakPoint(lua_State* L);
   BreakPoint* findBreakPoint(lua_State* L);
 
+  std::vector<StackFrame> updateStackFrames();
+
  private:
   friend class LuaStatics;
 

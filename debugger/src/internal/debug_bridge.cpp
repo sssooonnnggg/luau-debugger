@@ -118,21 +118,9 @@ StackTraceResponse DebugBridge::getStackTrace() {
   lua_State* L = break_vm_;
 
   updateVariables();
+  auto frames = updateStackFrames();
 
-  lua_Debug ar;
-  for (int level = 0; lua_getinfo(L, level, "sln", &ar); ++level) {
-    StackFrame frame;
-    frame.id = level;
-    frame.name = ar.name ? ar.name : "unknown";
-    frame.source = Source{};
-    if (ar.source)
-      frame.source->path = normalizePath(ar.source);
-    frame.line = ar.currentline;
-    response.stackFrames.emplace_back(std::move(frame));
-  }
-
-  // TODO: consider coroutine stack
-
+  response.stackFrames = frames;
   response.totalFrames = response.stackFrames.size();
   return response;
 }
@@ -523,7 +511,35 @@ BreakPoint* DebugBridge::findBreakPoint(lua_State* L) {
 
 void DebugBridge::updateVariables() {
   variable_registry_.clear();
-  variable_registry_.update(break_vm_);
+  lua_State* L = break_vm_;
+
+  while (L != nullptr) {
+    variable_registry_.update(L);
+    L = vm_registry_.getParent(L);
+  }
+}
+
+std::vector<StackFrame> DebugBridge::updateStackFrames() {
+  std::vector<StackFrame> frames;
+  lua_Debug ar;
+  lua_State* L = break_vm_;
+  while (L != nullptr) {
+    for (int level = 0; lua_getinfo(L, level, "sln", &ar); ++level) {
+      if (ar.what[0] == 'C')
+        continue;
+      StackFrame frame;
+      frame.id = level;
+      frame.name = ar.name ? ar.name : "anonymous";
+      frame.source = Source{};
+      if (ar.source)
+        frame.source->path = normalizePath(ar.source);
+      frame.line = ar.currentline;
+      frames.emplace_back(std::move(frame));
+    }
+    L = vm_registry_.getParent(L);
+  }
+
+  return frames;
 }
 
 }  // namespace luau::debugger

@@ -55,10 +55,13 @@ void VariableRegistry::clear() {
 }
 
 void VariableRegistry::update(lua_State* L) {
-  int stack_depth = lua_stackdepth(L);
-
-  for (int level = 0; level < stack_depth; ++level, ++depth_)
+  lua_Debug ar;
+  for (int level = 0; lua_getinfo(L, level, "sln", &ar); ++level) {
+    if (ar.what[0] == 'C')
+      continue;
     updateStack(L, level);
+    ++depth_;
+  }
 }
 
 Scope VariableRegistry::getLocalScope(int level) {
