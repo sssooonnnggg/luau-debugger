@@ -74,7 +74,7 @@ A debugger for Luau with debug adapter protocol(DAP) support.
   - [x] Continue
   - [ ] Force break
   - [x] StackTrace
-    - [ ] StackTrace support chaining coroutine
+    - [x] StackTrace across coroutine boundary
     - [ ] Support switching stacktrace between different coroutines
   - [x] Scopes
   - [x] Get variables

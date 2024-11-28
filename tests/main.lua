@@ -77,6 +77,14 @@ local function test_coroutine()
         local a = 1
         local b = 2
         local c = { a, b, "hello coroutine"}
+        local function co2()
+            local foo = "hello"
+            coroutine.yield()
+            print(foo)
+        end
+
+        local co2_instance = coroutine.create(co2)
+        coroutine.resume(co2_instance)
         local d, e= coroutine.yield(a, b, c)
         print("coroutine resume", d, e)
     end)
