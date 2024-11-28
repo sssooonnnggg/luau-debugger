@@ -279,8 +279,11 @@ void Debugger::registerStepOutHandler() {
 }
 
 void Debugger::registerEvaluateHandler() {
+  static bool should_invalidate = false;
   session_->registerHandler([&](const dap::EvaluateRequest& request)
                                 -> dap::ResponseOrError<dap::EvaluateResponse> {
+    should_invalidate =
+        request.context.has_value() && request.context.value() == "repl";
     DEBUGGER_LOG_INFO("Server received evaluate request from client: {}",
                       dap_utils::toString(request));
     return debug_bridge_->evaluate(request);
@@ -288,7 +291,7 @@ void Debugger::registerEvaluateHandler() {
   session_->registerSentHandler(
       [&](const dap::ResponseOrError<dap::EvaluateResponse>& res) {
         // Invalidate variables
-        if (!res.error)
+        if (!res.error && should_invalidate)
           invalidateVariables();
       });
 }

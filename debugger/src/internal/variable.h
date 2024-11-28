@@ -14,6 +14,7 @@ class Variable {
   bool isTable() const;
   std::string_view getName() const;
   std::string_view getValue() const;
+  std::string_view getType() const;
 
   std::string setValue(Scope scope, const std::string& value);
 

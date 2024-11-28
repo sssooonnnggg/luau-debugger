@@ -35,6 +35,10 @@ std::string_view Variable::getValue() const {
   return value_;
 }
 
+std::string_view Variable::getType() const {
+  return lua_typename(L_, type_);
+}
+
 std::string Variable::setValue(Scope scope, const std::string& value) {
   if (!lua_utils::pushBreakEnv(L_, level_))
     throw std::runtime_error("Failed to push break environment");
@@ -115,7 +119,10 @@ void Variable::registryTableFields(luau::debugger::VariableRegistry* registry,
   lua_checkstack(L, 2);
   lua_pushnil(L);
   while (lua_next(L, -2)) {
+    bool number_index = lua_isnumber(L, -2);
     std::string field_name = lua_utils::toString(L, -2);
+    if (number_index)
+      field_name = std::format("[{}]", lua_tointeger(L, -2));
     auto variable = registry->createVariable(L, field_name, level_);
     if (lua_isnumber(L, -2))
       variable.index_ = lua_tointeger(L, -2);

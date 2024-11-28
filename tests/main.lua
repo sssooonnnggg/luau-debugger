@@ -16,7 +16,10 @@ local function test_variables()
                 a = 1,
                 b = 2,
             }
-            local bar_array = {1, 2, 3, 4, 5}
+            local bar_array = {}
+            for i = 1, 10000 do
+                bar_array[i] = i
+            end
             local bar_nested_table = {
                 a = 1,
                 b = 2,

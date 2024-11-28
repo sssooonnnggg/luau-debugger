@@ -155,6 +155,7 @@ VariablesResponse DebugBridge::getVariables(int reference) {
   for (const auto& variable : (*variables))
     response.variables.emplace_back(
         dap::Variable{.name = std::string(variable.getName()),
+                      .type = std::string(variable.getType()),
                       .value = std::string(variable.getValue()),
                       .variablesReference = variable.getScope().getKey()});
   return response;
@@ -443,17 +444,23 @@ ResponseOrError<EvaluateResponse> DebugBridge::evalWithEnv(
   if (!lua_utils::pushBreakEnv(break_vm_, level))
     return Error{"Failed to push break environment"};
 
-  int ret = lua_utils::eval(break_vm_, request.expression, -1).value_or(1);
+  auto ret = lua_utils::eval(break_vm_, request.expression, -1);
+  if (!ret.has_value()) {
+    auto error = lua_utils::toString(break_vm_, -1);
+    lua_pop(break_vm_, 2);
+    return Error{error};
+  }
+
   std::string result;
-  for (int i = ret; i >= 1; --i) {
+  for (int i = *ret; i >= 1; --i) {
     result += lua_utils::toString(break_vm_, -i);
     if (i != 1)
       result += "\n";
   }
 
   // Pop result
-  if (ret > 0)
-    lua_pop(break_vm_, ret);
+  if (*ret > 0)
+    lua_pop(break_vm_, *ret);
 
   // Pop the environment
   lua_pop(break_vm_, 1);
