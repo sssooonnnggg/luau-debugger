@@ -37,10 +37,4 @@ class VariableRegistry {
   std::unordered_map<Scope, std::vector<Variable>> variables_;
 };
 
-class VariableRegistries {
- public:
- private:
-  std::vector<VariableRegistry> registries_;
-};
-
 }  // namespace luau::debugger

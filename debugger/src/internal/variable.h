@@ -24,6 +24,7 @@ class Variable {
            int level);
   void registryTableFields(luau::debugger::VariableRegistry* registry,
                            lua_State* L);
+  std::string preprocessInput(const std::string& value);
 
  private:
   lua_State* L_ = nullptr;

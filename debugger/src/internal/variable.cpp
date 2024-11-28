@@ -42,7 +42,7 @@ std::string Variable::setValue(Scope scope, const std::string& value) {
   if (!lua_utils::pushBreakEnv(L_, level_))
     throw std::runtime_error("Failed to push break environment");
 
-  auto result = lua_utils::eval(L_, value, -1);
+  auto result = lua_utils::eval(L_, preprocessInput(value), -1);
   if (!result.has_value()) {
     auto error = lua_utils::toString(L_, -1);
     lua_pop(L_, 2);
@@ -88,6 +88,15 @@ std::string Variable::setValue(Scope scope, const std::string& value) {
 
   lua_pop(L_, 2);
   return new_value;
+}
+
+std::string Variable::preprocessInput(const std::string& value) {
+  if (type_ == LUA_TSTRING)
+    return std::format("[[{}]]", value);
+  else if (type_ == LUA_TVECTOR)
+    return std::format("vector.create{}", value);
+
+  return value;
 }
 
 void Variable::registryTableFields(luau::debugger::VariableRegistry* registry,

@@ -43,6 +43,8 @@ local function test_variables()
             local bar_function = function() end
             print("Hello, World!")
             print(foo_string)
+            foo_string = "abcdefg"
+            foo_number = 255
         end
 
         bar(500, 600)

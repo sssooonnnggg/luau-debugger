@@ -3,6 +3,8 @@
 #include <lua.h>
 
 namespace luau::debugger {
+
+// Implementation of static functions provided to Lua
 class LuaStatics {
  public:
   static void debugbreak(lua_State* L, lua_Debug* ar);

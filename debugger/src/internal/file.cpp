@@ -1,3 +1,4 @@
+#include "file.h"
 #include <lua.h>
 #include <unordered_set>
 #include <utility>
@@ -8,55 +9,62 @@
 
 namespace luau::debugger {
 
-FileRef::FileRef(lua_State* L) {
+LuaFileRef::LuaFileRef(lua_State* L) {
   L_ = L;
+  func_ = lua_utils::getFunction(L, -1);
   lua_checkstack(L, 1);
+
+  // Save the lua_State associated with file
   lua_pushthread(L);
   thread_ref_ = lua_ref(L, -1);
   lua_pop(L, 1);
+
+  // Save the function return by luau_load
   file_ref_ = lua_ref(L, -1);
-  func_ = lua_utils::getFunction(L, -1);
 }
 
-FileRef::~FileRef() {
-  lua_unref(L_, file_ref_);
-  lua_unref(L_, thread_ref_);
+LuaFileRef::~LuaFileRef() {
+  release();
 }
 
-FileRef::FileRef(const FileRef& other) {
-  L_ = other.L_;
-  lua_checkstack(L_, 1);
-  lua_getref(L_, other.thread_ref_);
-  thread_ref_ = lua_ref(L_, -1);
-  lua_pop(L_, 1);
-  lua_getref(L_, other.file_ref_);
-  file_ref_ = lua_ref(L_, -1);
-  func_ = lua_utils::getFunction(L_, -1);
-  lua_pop(L_, 1);
+LuaFileRef::LuaFileRef(const LuaFileRef& other) {
+  copyFrom(other);
 }
 
-FileRef& FileRef::operator=(const FileRef& other) {
+LuaFileRef& LuaFileRef::operator=(const LuaFileRef& other) {
   if (this == &other)
     return *this;
 
-  lua_unref(L_, file_ref_);
-  lua_unref(L_, thread_ref_);
+  copyFrom(other);
+  return *this;
+}
 
+bool LuaFileRef::operator==(const LuaFileRef& other) const {
+  return L_ == other.L_ && func_ == other.func_;
+}
+
+void LuaFileRef::release() {
+  if (thread_ref_ != LUA_REFNIL)
+    lua_unref(L_, file_ref_);
+
+  if (file_ref_ != LUA_REFNIL)
+    lua_unref(L_, thread_ref_);
+}
+
+void LuaFileRef::copyFrom(const LuaFileRef& other) {
   L_ = other.L_;
   lua_checkstack(L_, 1);
+
+  // Copy the lua_State reference
   lua_getref(L_, other.thread_ref_);
   thread_ref_ = lua_ref(L_, -1);
   lua_pop(L_, 1);
+
+  // Copy the function reference
   lua_getref(L_, other.file_ref_);
   file_ref_ = lua_ref(L_, -1);
   func_ = lua_utils::getFunction(L_, -1);
   lua_pop(L_, 1);
-
-  return *this;
-}
-
-bool FileRef::operator==(const FileRef& other) const {
-  return L_ == other.L_ && func_ == other.func_;
 }
 
 void File::setPath(std::string path) {
@@ -79,7 +87,7 @@ void File::setBreakPoints(
   });
 }
 
-void File::addRef(FileRef ref) {
+void File::addRef(LuaFileRef ref) {
   if (std::find(refs_.begin(), refs_.end(), ref) != refs_.end())
     return;
 

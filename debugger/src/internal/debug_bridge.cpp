@@ -232,7 +232,7 @@ void DebugBridge::onLuaFileLoaded(lua_State* L,
   if (it == files_.end()) {
     File file;
     file.setPath(normalized_path);
-    file.addRef(FileRef(L));
+    file.addRef(LuaFileRef(L));
 
     DEBUGGER_LOG_INFO("[onLuaFileLoaded] New file loaded: {}", normalized_path);
     it = files_.emplace(normalized_path, std::move(file)).first;
@@ -241,7 +241,7 @@ void DebugBridge::onLuaFileLoaded(lua_State* L,
         "[onLuaFileLoaded] File already loaded, replace with new: {}",
         normalized_path);
 
-    it->second.addRef(FileRef(L));
+    it->second.addRef(LuaFileRef(L));
   }
 
   if (is_entry && stop_on_entry_) {

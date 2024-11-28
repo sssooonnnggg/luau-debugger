@@ -15,6 +15,7 @@ std::optional<int> eval(lua_State* L, const std::string& code, int env) {
   auto callbacks = lua_callbacks(main_vm);
   auto old_step = callbacks->debugstep;
 
+  // Avoid break by debugstep when executing `eval`
   auto _ = utils::makeRAII(
       [callbacks]() { callbacks->debugstep = nullptr; },
       [callbacks, old_step]() { callbacks->debugstep = old_step; });

@@ -10,13 +10,18 @@
 #include <internal/utils.h>
 
 namespace luau::debugger {
-struct FileRef final {
-  FileRef(lua_State* L);
-  ~FileRef();
 
-  FileRef(const FileRef& other);
-  FileRef& operator=(const FileRef& other);
-  bool operator==(const FileRef& other) const;
+// Reference to a loaded Lua file
+struct LuaFileRef final {
+  LuaFileRef(lua_State* L);
+  ~LuaFileRef();
+
+  LuaFileRef(const LuaFileRef& other);
+  LuaFileRef& operator=(const LuaFileRef& other);
+  bool operator==(const LuaFileRef& other) const;
+
+  void release();
+  void copyFrom(const LuaFileRef& other);
 
   lua_State* L_ = nullptr;
   Closure* func_ = nullptr;
@@ -30,7 +35,7 @@ class File {
   std::string_view path() const;
 
   void setBreakPoints(const std::unordered_map<int, BreakPoint>& breakpoints);
-  void addRef(FileRef ref);
+  void addRef(LuaFileRef ref);
 
   void addBreakPoint(const BreakPoint& bp);
   void addBreakPoint(int line);
@@ -47,7 +52,7 @@ class File {
  private:
   std::string path_;
   std::unordered_map<int, BreakPoint> breakpoints_;
-  std::vector<FileRef> refs_;
+  std::vector<LuaFileRef> refs_;
 };
 
 template <class Predicate>
