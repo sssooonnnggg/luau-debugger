@@ -1,4 +1,5 @@
 #include <lua.h>
+#include <array>
 #include <cstdlib>
 #include <memory>
 #include <utility>
@@ -246,6 +247,13 @@ void Debugger::registerSetVariableHandler() {
                           dap_utils::toString(request));
         return debug_bridge_->setVariable(request);
       });
+  session_->registerSentHandler(
+      [&](const dap::ResponseOrError<dap::SetVariableResponse>& res) {
+        // Invalidate variables
+        if (!res.error)
+          session_->send(dap::InvalidatedEvent{
+              .areas = std::vector<std::string>{"stacks"}});
+      });
 }
 
 void Debugger::registerNextHandler() {
@@ -279,6 +287,13 @@ void Debugger::registerEvaluateHandler() {
                       dap_utils::toString(request));
     return debug_bridge_->evaluate(request);
   });
+  session_->registerSentHandler(
+      [&](const dap::ResponseOrError<dap::EvaluateResponse>& res) {
+        // Invalidate variables
+        if (!res.error)
+          session_->send(dap::InvalidatedEvent{
+              .areas = std::vector<std::string>{"stacks"}});
+      });
 }
 
 }  // namespace luau::debugger

@@ -36,9 +36,6 @@ std::string_view Variable::getValue() const {
 }
 
 std::string Variable::setValue(Scope scope, const std::string& value) {
-  if (isTable())
-    throw std::runtime_error("Can't set value for table");
-
   if (!lua_utils::pushBreakEnv(L_, level_))
     throw std::runtime_error("Failed to push break environment");
 

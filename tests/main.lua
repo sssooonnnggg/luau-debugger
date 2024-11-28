@@ -41,10 +41,9 @@ local function test_variables()
             table_with_circle.b.d = table_with_circle
             table_with_circle.e.g = table_with_circle.b
             local bar_function = function() end
+            foo_string = "ghi"
             print("Hello, World!")
-            print(foo_string)
-            foo_string = "abcdefg"
-            foo_number = 255
+            print(foo_string, foo_number)
         end
 
         bar(500, 600)
