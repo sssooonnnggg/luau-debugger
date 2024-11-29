@@ -3,6 +3,7 @@
 #include <format>
 #include <mutex>
 #include <optional>
+#include <thread>
 #include <unordered_map>
 
 #include <lstate.h>
@@ -26,7 +27,8 @@
 
 namespace luau::debugger {
 
-DebugBridge::DebugBridge(bool stop_on_entry) : stop_on_entry_(stop_on_entry) {}
+DebugBridge::DebugBridge(bool stop_on_entry)
+    : stop_on_entry_(stop_on_entry), task_pool_(std::this_thread::get_id()) {}
 
 DebugBridge* DebugBridge::get(lua_State* L) {
   lua_State* main_vm = lua_mainthread(L);
@@ -229,41 +231,43 @@ void DebugBridge::onLuaFileLoaded(lua_State* L,
 void DebugBridge::setBreakPoints(
     std::string_view path,
     optional<array<SourceBreakpoint>> breakpoints) {
-  auto normalized_path = normalizePath(path);
-
-  // Clear all breakpoints
-  if (!breakpoints.has_value()) {
-    DEBUGGER_LOG_INFO("[setBreakPoint] clear all breakpoints: {}",
-                      normalized_path);
-    auto it = files_.find(normalized_path);
-    if (it == files_.end())
+  std::string normalized_path = normalizePath(path);
+  task_pool_.post([this, normalized_path = std::move(normalized_path),
+                   breakpoints = std::move(breakpoints)] {
+    // Clear all breakpoints
+    if (!breakpoints.has_value()) {
+      DEBUGGER_LOG_INFO("[setBreakPoint] clear all breakpoints: {}",
+                        normalized_path);
+      auto it = files_.find(normalized_path);
+      if (it == files_.end())
+        return;
+      it->second.clearBreakPoints();
       return;
-    it->second.clearBreakPoints();
-    return;
-  }
+    }
 
-  auto it = files_.find(normalized_path);
-  std::unordered_map<int, BreakPoint> bps;
-  for (const auto& breakpoint : *breakpoints) {
-    auto bp = BreakPoint::create(breakpoint.line);
-    if (breakpoint.condition.has_value())
-      bp.setCondition(breakpoint.condition.value());
-    bps.emplace(static_cast<int>(breakpoint.line), std::move(bp));
-  }
+    auto it = files_.find(normalized_path);
+    std::unordered_map<int, BreakPoint> bps;
+    for (const auto& breakpoint : *breakpoints) {
+      auto bp = BreakPoint::create(breakpoint.line);
+      if (breakpoint.condition.has_value())
+        bp.setCondition(breakpoint.condition.value());
+      bps.emplace(static_cast<int>(breakpoint.line), std::move(bp));
+    }
 
-  if (it == files_.end()) {
-    DEBUGGER_LOG_INFO("[setBreakPoint] create new file with breakpoints: {}",
-                      normalized_path);
+    if (it == files_.end()) {
+      DEBUGGER_LOG_INFO("[setBreakPoint] create new file with breakpoints: {}",
+                        normalized_path);
 
-    File file;
-    file.setPath(normalized_path);
-    it = files_.emplace(normalized_path, File()).first;
-  } else
-    DEBUGGER_LOG_INFO("[setBreakPoint] file already loaded: {}",
-                      normalized_path);
+      File file;
+      file.setPath(normalized_path);
+      it = files_.emplace(normalized_path, File()).first;
+    } else
+      DEBUGGER_LOG_INFO("[setBreakPoint] file already loaded: {}",
+                        normalized_path);
 
-  auto& file = it->second;
-  file.setBreakPoints(bps);
+    auto& file = it->second;
+    file.setBreakPoints(bps);
+  });
 }
 
 std::string DebugBridge::normalizePath(std::string_view path) const {
@@ -301,14 +305,7 @@ bool DebugBridge::isBreakOnEntry(lua_State* L) const {
 }
 
 void DebugBridge::interruptUpdate() {
-  std::vector<std::function<void()>> actions;
-  {
-    std::scoped_lock lock(deferred_mutex_);
-    std::swap(deferred_actions_, actions);
-  }
-
-  for (const auto& action : actions)
-    action();
+  task_pool_.process();
 }
 
 void DebugBridge::clearBreakPoints() {
@@ -323,7 +320,7 @@ void DebugBridge::onConnect(dap::Session* session) {
 }
 
 void DebugBridge::onDisconnect() {
-  threadSafeCall(&DebugBridge::clearBreakPoints);
+  task_pool_.post([this] { clearBreakPoints(); });
   std::scoped_lock lock(break_mutex_);
   if (!resume_) {
     resume_ = true;

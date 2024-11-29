@@ -14,6 +14,7 @@
 #include <internal/breakpoint.h>
 #include <internal/file.h>
 #include <internal/lua_statics.h>
+#include <internal/task_pool.h>
 #include <internal/variable.h>
 #include <internal/variable_registry.h>
 #include <internal/vm_registry.h>
@@ -89,21 +90,6 @@ class DebugBridge final {
   // Called from **DAP** client to evaluate expression
   ResponseOrError<EvaluateResponse> evaluate(const EvaluateRequest& request);
 
-  // Thread safe call
-  template <class F, class... Args>
-  void threadSafeCall(F&& f, Args&&... args) {
-    if (isDebugBreak())
-      std::invoke(std::forward<F>(f), this, std::forward<Args>(args)...);
-    else {
-      std::scoped_lock lock(deferred_mutex_);
-      deferred_actions_.emplace_back(
-          [f = std::forward<F>(f),
-           args = std::make_tuple(this, std::forward<Args>(args)...)]() {
-            std::apply(f, args);
-          });
-    }
-  }
-
   void writeDebugConsole(std::string_view msg, lua_State* L, int level = 0);
 
   VMRegistry& vms() { return vm_registry_; }
@@ -157,18 +143,17 @@ class DebugBridge final {
   std::unordered_map<std::string, File> files_;
 
   lua_State* break_vm_ = nullptr;
-  std::vector<lua_State*> vm_stack_;
   std::mutex break_mutex_;
   bool resume_ = false;
   std::condition_variable resume_cv_;
+
+  std::vector<lua_State*> vm_stack_;
 
   dap::Session* session_ = nullptr;
   std::condition_variable session_cv_;
 
   VariableRegistry variable_registry_;
-
-  std::vector<std::function<void()>> deferred_actions_;
-  std::mutex deferred_mutex_;
+  TaskPool task_pool_;
 
   SingleStepProcessor single_step_processor_ = nullptr;
 };

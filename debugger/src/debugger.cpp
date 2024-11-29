@@ -183,8 +183,7 @@ void Debugger::registerSetBreakpointsHandler() {
         if (!file_path.has_value())
           return dap::Error("Invalid file path");
 
-        debug_bridge_->threadSafeCall(&DebugBridge::setBreakPoints,
-                                      file_path.value(), request.breakpoints);
+        debug_bridge_->setBreakPoints(file_path.value(), request.breakpoints);
 
         dap::SetBreakpointsResponse response;
         return response;
