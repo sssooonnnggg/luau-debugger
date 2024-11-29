@@ -6,6 +6,7 @@
 #include <lua.h>
 
 #include <internal/utils.h>
+#include <internal/utils/lua_types.h>
 #include <internal/utils/lua_utils.h>
 
 namespace luau::debugger::lua_utils {
@@ -55,54 +56,7 @@ std::optional<int> eval(lua_State* L, const std::string& code, int env) {
 }
 
 std::string toString(lua_State* L, int index) {
-  auto type = lua_type(L, index);
-  std::string value;
-  switch (type) {
-    case LUA_TNIL:
-      value = "nil";
-      break;
-    case LUA_TBOOLEAN:
-      value = lua_toboolean(L, index) ? "true" : "false";
-      break;
-    case LUA_TVECTOR: {
-      const float* v = lua_tovector(L, index);
-      value = std::format("({}, {}, {})", v[0], v[1], v[2]);
-      break;
-    }
-    case LUA_TNUMBER:
-      // NOTICE: make lua_tostring call to a copy of the value to avoid modify
-      // the original value
-      lua_checkstack(L, 1);
-      lua_pushvalue(L, index);
-      value = lua_tostring(L, -1);
-      lua_pop(L, 1);
-      break;
-    case LUA_TSTRING:
-      value = lua_tostring(L, index);
-      break;
-    case LUA_TLIGHTUSERDATA:
-      value = "lightuserdata";
-      break;
-    case LUA_TTABLE:
-      value = "table";
-      break;
-    case LUA_TFUNCTION:
-      value = "function";
-      break;
-    case LUA_TUSERDATA:
-      value = "userdata";
-      break;
-    case LUA_TTHREAD:
-      value = "thread";
-      break;
-    case LUA_TBUFFER:
-      value = "buffer";
-      break;
-    default:
-      value = "unknown";
-      break;
-  };
-  return value;
+  return type::toString(L, index);
 }
 
 bool pushBreakEnv(lua_State* L, int level) {

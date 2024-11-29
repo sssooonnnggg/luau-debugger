@@ -12,6 +12,7 @@ target_sources(${library_name}
   src/internal/variable_registry.cpp
   src/internal/vm_registry.cpp
   src/internal/utils/lua_utils.cpp
+  src/internal/utils/lua_types.cpp
 )
 
 target_include_directories(${library_name} PRIVATE
