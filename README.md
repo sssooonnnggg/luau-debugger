@@ -2,7 +2,7 @@
 
 A debugger for Luau with debug adapter protocol(DAP) support.
 
-![](extensions/vscode/docs/demo.gif)
+![](docs/demo.gif)
 
 ## Overview
 
