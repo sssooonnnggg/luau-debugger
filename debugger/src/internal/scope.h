@@ -56,14 +56,14 @@ class Scope final {
     return scope;
   }
 
-  static Scope createTable(lua_State* L) {
-    const TValue* t = luaA_toobject(L, -1);
+  static Scope createTable(lua_State* L, int index = -1) {
+    const TValue* t = luaA_toobject(L, index);
     auto* address = hvalue(t);
     Scope scope;
     scope.L_ = L;
     scope.createKey(std::hash<const Table*>{}(address));
     scope.type_ = ScopeType::Table;
-    scope.table_ref_ = lua_ref(L, -1);
+    scope.table_ref_ = lua_ref(L, index);
     return scope;
   }
 

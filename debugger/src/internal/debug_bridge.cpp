@@ -18,6 +18,7 @@
 #include <internal/file.h>
 #include <internal/log.h>
 #include <internal/lua_statics.h>
+#include <internal/scope.h>
 #include <internal/utils.h>
 #include <internal/variable.h>
 
@@ -441,31 +442,42 @@ ResponseOrError<EvaluateResponse> DebugBridge::evalWithEnv(
   if (request.frameId.has_value())
     level = request.frameId.value();
 
-  if (!lua_utils::pushBreakEnv(break_vm_, level))
+  DEBUGGER_ASSERT(level >= 0 && level < vm_stack_.size());
+  lua_State* L = vm_stack_[level];
+
+  if (!lua_utils::pushBreakEnv(L, level))
     return Error{"Failed to push break environment"};
 
-  auto ret = lua_utils::eval(break_vm_, request.expression, -1);
+  auto ret = lua_utils::eval(L, request.expression, -1);
   if (!ret.has_value()) {
-    auto error = lua_utils::toString(break_vm_, -1);
-    lua_pop(break_vm_, 2);
+    auto error = lua_utils::toString(L, -1);
+    lua_pop(L, 2);
     return Error{error};
   }
 
+  EvaluateResponse response;
+
   std::string result;
   for (int i = *ret; i >= 1; --i) {
-    result += lua_utils::toString(break_vm_, -i);
+    if (!response.type.has_value()) {
+      response.type = lua_typename(L, lua_type(L, -i));
+      if (lua_istable(L, -i))
+        response.variablesReference = Scope::createTable(L, -i).getKey();
+    }
+
+    result += lua_utils::toString(L, -i);
     if (i != 1)
       result += "\n";
   }
 
   // Pop result
   if (*ret > 0)
-    lua_pop(break_vm_, *ret);
+    lua_pop(L, *ret);
 
   // Pop the environment
-  lua_pop(break_vm_, 1);
+  lua_pop(L, 1);
 
-  EvaluateResponse response{.result = result};
+  response.result = result;
   return response;
 }
 
@@ -530,6 +542,7 @@ std::vector<StackFrame> DebugBridge::updateStackFrames() {
   std::vector<StackFrame> frames;
   lua_Debug ar;
   lua_State* L = break_vm_;
+  vm_stack_.clear();
   while (L != nullptr) {
     for (int level = 0; lua_getinfo(L, level, "sln", &ar); ++level) {
       if (ar.what[0] == 'C')
@@ -542,6 +555,7 @@ std::vector<StackFrame> DebugBridge::updateStackFrames() {
         frame.source->path = normalizePath(ar.source);
       frame.line = ar.currentline;
       frames.emplace_back(std::move(frame));
+      vm_stack_.push_back(L);
     }
     L = vm_registry_.getParent(L);
   }

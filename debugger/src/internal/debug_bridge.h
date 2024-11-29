@@ -157,6 +157,7 @@ class DebugBridge final {
   std::unordered_map<std::string, File> files_;
 
   lua_State* break_vm_ = nullptr;
+  std::vector<lua_State*> vm_stack_;
   std::mutex break_mutex_;
   bool resume_ = false;
   std::condition_variable resume_cv_;
