@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as child_process from 'child_process';
+import * as readline from 'readline';
 import { WorkspaceFolder, DebugConfiguration, ProviderResult, CancellationToken } from 'vscode';
 
 const DEBUGGER_IDENTITY = 'luau';
@@ -47,13 +48,14 @@ async function spawnLuauDebugger(session: vscode.DebugSession): Promise<child_pr
         }, 1000 * 60);
 
         process.stderr.on('data', data => {
-            console.log(data);
+            //   console.log(data.toString());
         });
 
-        process.stdout.on('data', data => {
+        const rl = readline.createInterface(process.stdout);
+        rl.on('line', line => {
             const waiting = 'wait for client connection'
-            console.log(data);
-            if (data.toString().includes(waiting)) {
+            console.log(line);
+            if (line.includes(waiting)) {
                 clearTimeout(timeout);
                 resolve(process);
             }

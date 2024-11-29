@@ -111,13 +111,13 @@ end
 
 local function test_error()
     -- error should output to debug console
-    -- abc.def()
+    abc.def()
 end
 
 local function test_print()
     local number = 3.1415
     local string = "hello world"
-    local vector = vector.create(1, 2, 3)
+    local v = vector.create(1, 2, 3)
     print(number)
     print(string)
     print(vector)

@@ -4,3 +4,5 @@ build/**/*
 .cache/**/*
 *.code-workspace
 **/*.exe
+**/out/*.js
+**/out/*.js.map
