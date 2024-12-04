@@ -20,6 +20,8 @@ target_include_directories(${library_name} PRIVATE
   src
 )
 
+target_compile_definitions(cppdap PUBLIC _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
+
 target_link_libraries(${library_name} PRIVATE cppdap)
 target_include_directories(${library_name} PRIVATE
   ${CPP_DAP_ROOT}/include
@@ -27,6 +29,7 @@ target_include_directories(${library_name} PRIVATE
   ${CPP_DAP_ROOT}/third_party/json/include
 )
 target_compile_features(${library_name} PRIVATE cxx_std_20)
+target_compile_definitions(${library_name} PUBLIC _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
 target_link_libraries(${library_name} PUBLIC Luau.VM Luau.Compiler)
 target_include_directories(${library_name} PRIVATE
