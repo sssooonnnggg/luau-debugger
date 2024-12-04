@@ -97,8 +97,8 @@ void File::addRef(LuaFileRef ref) {
 }
 
 void File::enableBreakPoint(BreakPoint& bp, bool enable) {
-  for (const auto& ref : refs_)
-    bp.enable(ref.L_, ref.file_ref_, enable);
+  for (auto& ref : refs_)
+    int target = bp.enable(ref.L_, ref.file_ref_, enable);
 }
 
 void File::addBreakPoint(int line) {

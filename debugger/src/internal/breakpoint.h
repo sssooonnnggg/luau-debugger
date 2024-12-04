@@ -10,7 +10,8 @@ class BreakPoint {
   static BreakPoint create(int line);
 
   int line() const;
-  bool enable(lua_State* L, int func_index, bool enable);
+  int targetLine() const;
+  int enable(lua_State* L, int func_index, bool enable);
   void setCondition(std::string condition);
   const std::string& condition() const;
 
@@ -20,5 +21,6 @@ class BreakPoint {
  private:
   std::string condition_;
   int line_ = 0;
+  int target_line_ = -1;
 };
 }  // namespace luau::debugger

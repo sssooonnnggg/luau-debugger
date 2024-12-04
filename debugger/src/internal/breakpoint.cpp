@@ -17,6 +17,10 @@ int BreakPoint::line() const {
   return line_;
 }
 
+int BreakPoint::targetLine() const {
+  return target_line_;
+}
+
 void BreakPoint::setCondition(std::string condition) {
   condition_ = std::move(condition);
 }
@@ -46,10 +50,12 @@ BreakPoint::HitResult BreakPoint::hit(lua_State* L) const {
   return HitResult::success(lua_toboolean(L, -1) != 0);
 }
 
-bool BreakPoint::enable(lua_State* L, int func_index, bool enable) {
+int BreakPoint::enable(lua_State* L, int func_index, bool enable) {
   lua_checkstack(L, 1);
   lua_getref(L, func_index);
-  bool result = lua_breakpoint(L, -1, line_, enable) != -1;
+  int result = lua_breakpoint(L, -1, line_, enable);
+  if (result != -1)
+    target_line_ = result;
   lua_pop(L, 1);
   return result;
 }

@@ -308,9 +308,16 @@ int DebugBridge::getStackDepth(lua_State* L) const {
   return depth;
 }
 
-bool DebugBridge::isBreakOnEntry(lua_State* L) const {
+bool DebugBridge::isBreakOnEntry(lua_State* L) {
   auto context = getBreakContext(L);
-  return entry_path_ == context.source_ && context.line_ == 1;
+  auto it = files_.find(normalizePath(entry_path_));
+  if (it == files_.end())
+    return false;
+  auto* bp = it->second.findBreakPoint(1);
+  if (bp == nullptr)
+    return false;
+
+  return entry_path_ == context.source_ && context.line_ == bp->targetLine();
 }
 
 void DebugBridge::interruptUpdate() {

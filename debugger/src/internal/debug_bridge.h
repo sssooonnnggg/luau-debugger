@@ -100,7 +100,7 @@ class DebugBridge final {
   void captureOutput(lua_State* L);
 
   std::string normalizePath(std::string_view path) const;
-  bool isBreakOnEntry(lua_State* L) const;
+  bool isBreakOnEntry(lua_State* L);
 
   BreakContext getBreakContext(lua_State* L) const;
   int getStackDepth(lua_State* L) const;
