@@ -53,6 +53,7 @@ class Debugger {
   ~Debugger();
 
   void initialize(lua_State* L);
+  void setRoot(std::string_view root);
 
   bool listen(int port);
   void tick();

@@ -7,6 +7,7 @@
 #include <lua.h>
 
 #include <internal/log.h>
+#include <internal/utils/lua_types.h>
 
 namespace luau::debugger::lua_utils {
 
@@ -14,9 +15,6 @@ namespace luau::debugger::lua_utils {
 // return value is the number of results on stack for the code to evaluate
 // if failed to evaluate, return nullopt and the error message is on the stack
 std::optional<int> eval(lua_State* L, const std::string& code, int env);
-
-// convert a lua value at index to a string to display in the debugger
-std::string toString(lua_State* L, int index);
 
 // push a new environment table to the stack
 bool pushBreakEnv(lua_State* L, int level);

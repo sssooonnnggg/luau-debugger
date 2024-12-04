@@ -21,6 +21,7 @@
 #include <internal/lua_statics.h>
 #include <internal/scope.h>
 #include <internal/utils.h>
+#include <internal/utils/lua_types.h>
 #include <internal/variable.h>
 
 #include "debugger.h"
@@ -45,6 +46,10 @@ void DebugBridge::initialize(lua_State* L) {
   captureOutput(L);
 
   lua_singlestep(L, true);
+}
+
+void DebugBridge::setRoot(std::string_view root) {
+  lua_root_ = std::string(root);
 }
 
 void DebugBridge::initializeCallbacks(lua_State* L) {
@@ -158,7 +163,7 @@ VariablesResponse DebugBridge::getVariables(int reference) {
   for (const auto& variable : (*variables))
     response.variables.emplace_back(
         dap::Variable{.name = std::string(variable.getName()),
-                      .type = std::string(variable.getType()),
+                      .type = variable.getType(),
                       .value = std::string(variable.getValue()),
                       .variablesReference = variable.getScope().getKey()});
   return response;
@@ -273,9 +278,13 @@ void DebugBridge::setBreakPoints(
 std::string DebugBridge::normalizePath(std::string_view path) const {
   if (path.empty())
     return std::string{};
-  std::string_view prefix_removed =
-      (path[0] == '@' || path[0] == '=') ? path.substr(1) : path;
-  return std::filesystem::weakly_canonical(prefix_removed).string();
+  std::string prefix_removed =
+      std::string((path[0] == '@' || path[0] == '=') ? path.substr(1) : path);
+  if (std::filesystem::path(prefix_removed).is_relative())
+    prefix_removed = lua_root_ + "/" + prefix_removed;
+  std::string with_extension =
+      std::filesystem::path(prefix_removed).replace_extension(".lua").string();
+  return std::filesystem::weakly_canonical(with_extension).string();
 }
 
 BreakContext DebugBridge::getBreakContext(lua_State* L) const {
@@ -447,7 +456,7 @@ ResponseOrError<EvaluateResponse> DebugBridge::evalWithEnv(
 
   auto ret = lua_utils::eval(L, request.expression, -1);
   if (!ret.has_value()) {
-    auto error = lua_utils::toString(L, -1);
+    auto error = lua_utils::type::toString(L, -1);
     lua_pop(L, 2);
     return Error{error};
   }
@@ -457,12 +466,12 @@ ResponseOrError<EvaluateResponse> DebugBridge::evalWithEnv(
   std::string result;
   for (int i = *ret; i >= 1; --i) {
     if (!response.type.has_value()) {
-      response.type = lua_typename(L, lua_type(L, -i));
+      response.type = lua_utils::type::getTypeName(lua_type(L, -i));
       if (lua_istable(L, -i))
         response.variablesReference = Scope::createTable(L, -i).getKey();
     }
 
-    result += lua_utils::toString(L, -i);
+    result += lua_utils::type::toString(L, -i);
     if (i != 1)
       result += "\n";
   }

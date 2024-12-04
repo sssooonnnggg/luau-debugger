@@ -9,7 +9,7 @@
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CPP_DAP_ROOT": "${sourceDir}/../cppdap",
-        "LUAU_ROOT": "${sourceDir}/../luau",
+        "LUAU_ROOT": "E:/P4/luau",
         "CPPDAP_BUILD_EXAMPLES": "ON",
         "LUAU_BUILD_TESTS": "OFF",
         "CMAKE_BUILD_TYPE": "Debug"

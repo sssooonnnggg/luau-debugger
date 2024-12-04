@@ -38,6 +38,7 @@ class DebugBridge final {
   DebugBridge(bool stop_on_entry);
 
   void initialize(lua_State* L);
+  void setRoot(std::string_view root);
   bool isDebugBreak();
 
   // Called from **lua runtime** after lua file is loaded
@@ -156,5 +157,6 @@ class DebugBridge final {
   TaskPool task_pool_;
 
   SingleStepProcessor single_step_processor_ = nullptr;
+  std::string lua_root_;
 };
 }  // namespace luau::debugger

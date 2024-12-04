@@ -26,18 +26,18 @@ class Scope final {
     name_ = other.name_;
     type_ = other.type_;
 
-    newTableRef(other.table_ref_);
+    newRef(other.ref_);
   }
   Scope(Scope&& other) {
     L_ = other.L_;
     key_ = other.key_;
     name_ = std::move(other.name_);
     type_ = other.type_;
-    newTableRef(other.table_ref_);
+    newRef(other.ref_);
   }
   ~Scope() {
-    if (type_ == ScopeType::Table && table_ref_ != LUA_REFNIL && L_ != nullptr)
-      lua_unref(L_, table_ref_);
+    if (type_ == ScopeType::Table && ref_ != LUA_REFNIL && L_ != nullptr)
+      lua_unref(L_, ref_);
   }
 
   static Scope createLocal(std::string_view name) {
@@ -59,12 +59,13 @@ class Scope final {
   static Scope createTable(lua_State* L, int index = -1) {
     const TValue* t = luaA_toobject(L, index);
     auto* address = hvalue(t);
-    Scope scope;
-    scope.L_ = L;
-    scope.createKey(std::hash<const Table*>{}(address));
-    scope.type_ = ScopeType::Table;
-    scope.table_ref_ = lua_ref(L, index);
-    return scope;
+    return createFromAddress<Table>(L, index, address);
+  }
+
+  static Scope createUserData(lua_State* L, int index = -1) {
+    const TValue* u = luaA_toobject(L, index);
+    auto* address = uvalue(u);
+    return createFromAddress<Udata>(L, index, address);
   }
 
   explicit Scope(int key) : key_(key) { type_ = ScopeType::Unknown; }
@@ -75,7 +76,7 @@ class Scope final {
     key_ = other.key_;
     name_ = other.name_;
     type_ = other.type_;
-    newTableRef(other.table_ref_);
+    newRef(other.ref_);
     return *this;
   }
 
@@ -86,23 +87,35 @@ class Scope final {
   bool isUpvalue() const { return type_ == ScopeType::UpValue; }
   bool isTable() const { return type_ == ScopeType::Table; }
 
-  bool pushTable() {
-    if (!isTable() || table_ref_ == LUA_REFNIL || L_ == nullptr)
+  bool pushRef() {
+    if (ref_ == LUA_REFNIL || L_ == nullptr)
       return false;
 
     lua_checkstack(L_, 1);
-    lua_getref(L_, table_ref_);
+    lua_getref(L_, ref_);
     return true;
   }
 
  private:
+  template <class T>
+  static Scope createFromAddress(lua_State* L, int index, const T* address) {
+    Scope scope;
+    scope.L_ = L;
+    scope.createKey(std::hash<const T*>{}(address));
+    scope.type_ = ScopeType::Table;
+    scope.ref_ = lua_ref(L, index);
+    return scope;
+  }
+
   void createKey(std::size_t hash) { key_ = hash & MASK; }
-  void newTableRef(int ref) {
-    if (!isTable() || ref == LUA_REFNIL)
+
+  void newRef(int ref) {
+    if (ref == LUA_REFNIL)
       return;
+
     lua_checkstack(L_, 1);
     lua_getref(L_, ref);
-    table_ref_ = lua_ref(L_, -1);
+    ref_ = lua_ref(L_, -1);
     lua_pop(L_, 1);
   }
 
@@ -113,7 +126,7 @@ class Scope final {
   std::string name_;
   ScopeType type_ = ScopeType::Local;
   lua_State* L_ = nullptr;
-  int table_ref_ = LUA_REFNIL;
+  int ref_ = LUA_REFNIL;
 };
 
 }  // namespace luau::debugger

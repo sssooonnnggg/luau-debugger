@@ -1,9 +1,12 @@
+#include <format>
+
 #include <lapi.h>
 #include <lobject.h>
 #include <lstate.h>
 #include <lua.h>
-#include <format>
+#include <lualib.h>
 
+#include <internal/log.h>
 #include <internal/utils.h>
 #include <internal/variable.h>
 #include <internal/variable_registry.h>
@@ -15,8 +18,8 @@ Variable::Variable(VariableRegistry* registry,
                    int level)
     : L_(L), name_(name), level_(level) {
   type_ = lua_type(L, -1);
-  value_ = lua_utils::toString(L, -1);
-  registryTableFields(registry, L);
+  value_ = lua_utils::type::toString(L, -1);
+  addFields(registry, L);
 }
 
 Scope Variable::getScope() const {
@@ -27,6 +30,14 @@ bool Variable::isTable() const {
   return type_ == LUA_TTABLE;
 }
 
+bool Variable::isUserData() const {
+  return type_ == LUA_TUSERDATA;
+}
+
+bool Variable::hasFields() const {
+  return isTable() || isUserData();
+}
+
 std::string_view Variable::getName() const {
   return name_;
 }
@@ -35,8 +46,8 @@ std::string_view Variable::getValue() const {
   return value_;
 }
 
-std::string_view Variable::getType() const {
-  return lua_typename(L_, type_);
+std::string Variable::getType() const {
+  return lua_utils::type::getTypeName(type_);
 }
 
 std::string Variable::setValue(Scope scope, const std::string& value) {
@@ -45,7 +56,7 @@ std::string Variable::setValue(Scope scope, const std::string& value) {
 
   auto result = lua_utils::eval(L_, preprocessInput(value), -1);
   if (!result.has_value()) {
-    auto error = lua_utils::toString(L_, -1);
+    auto error = lua_utils::type::toString(L_, -1);
     lua_pop(L_, 2);
     throw std::runtime_error(error);
   }
@@ -59,9 +70,9 @@ std::string Variable::setValue(Scope scope, const std::string& value) {
   if (ret_count > 1)
     lua_pop(L_, ret_count - 1);
 
-  auto new_value = lua_utils::toString(L_, -1);
+  auto new_value = lua_utils::type::toString(L_, -1);
   if (scope.isTable()) {
-    if (scope.pushTable()) {
+    if (scope.pushRef()) {
       // -1: key
       // -2: table
       // -3: value
@@ -103,32 +114,58 @@ std::string Variable::preprocessInput(const std::string& value) {
   return value;
 }
 
-void Variable::registryTableFields(luau::debugger::VariableRegistry* registry,
-                                   lua_State* L) {
-  if (!isTable())
+void Variable::addFields(luau::debugger::VariableRegistry* registry,
+                         lua_State* L) {
+  if (!hasFields())
     return;
 
-  scope_ = Scope::createTable(L);
+  if (isTable()) {
+    scope_ = isTable() ? Scope::createTable(L) : Scope::createUserData(L);
 
-  if (registry->isRegistered(scope_))
-    return;
+    if (registry->isRegistered(scope_))
+      return;
 
-  auto [it, _] = registry->registerVariables(scope_, {});
-  auto& variables = it->second;
+    auto [it, _] = registry->registerVariables(scope_, {});
+    auto& variables = it->second;
 
-  lua_checkstack(L, 2);
-  lua_pushnil(L);
-  while (lua_next(L, -2)) {
-    bool number_index = lua_isnumber(L, -2);
-    std::string field_name = lua_utils::toString(L, -2);
-    if (number_index)
-      field_name = std::format("[{}]", lua_tointeger(L, -2));
-    auto variable = registry->createVariable(L, field_name, level_);
-    if (lua_isnumber(L, -2))
-      variable.index_ = lua_tointeger(L, -2);
-    variables.emplace_back(variable);
-    lua_pop(L, 1);
+    lua_utils::StackGuard guard(L);
+    int value_idx = lua_absindex(L, -1);
+
+    lua_checkstack(L, 2);
+    lua_pushnil(L);
+    while (lua_next(L, value_idx)) {
+      variables.emplace_back(addField(L, registry));
+      lua_pop(L, 1);
+    }
   }
 }
+
+Variable Variable::addField(lua_State* L, VariableRegistry* registry) {
+  bool number_index = lua_isnumber(L, -2);
+  std::string field_name = lua_utils::type::toString(L, -2);
+  if (number_index)
+    field_name = std::format("[{}]", lua_tointeger(L, -2));
+  auto variable = registry->createVariable(L, field_name, level_);
+  if (lua_isnumber(L, -2))
+    variable.index_ = lua_tointeger(L, -2);
+  return variable;
+}
+
+// bool Variable::getUserDataIterator() {
+//   //
+//   https://github.com/luau-lang/rfcs/blob/master/docs/generalized-iteration.md
+//   if (!luaL_getmetafield(L, value_idx, "__iter")) {
+//     // No iterator for userdata, just return
+//     return;
+//   }
+
+//   int call_result = lua_pcall(L, 0, 3, 0);
+//   if (call_result != LUA_OK) {
+//     DEBUGGER_LOG_ERROR(
+//         "[Variable::registryFields] Failed to call __iter for {}, error: {}",
+//         name_, lua_tostring(L, -1));
+//     return;
+//   }
+// }
 
 }  // namespace luau::debugger

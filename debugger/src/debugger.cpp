@@ -37,6 +37,10 @@ void Debugger::initialize(lua_State* L) {
   debug_bridge_->initialize(L);
 }
 
+void Debugger::setRoot(std::string_view root) {
+  debug_bridge_->setRoot(root);
+}
+
 bool Debugger::listen(int port) {
   using namespace dap::net;
   server_ = dap::net::Server::create();
@@ -52,7 +56,7 @@ bool Debugger::listen(int port) {
 
 bool Debugger::stop() {
   closeSession();
-  server_->stop();
+  server_->stop();  
   debug_bridge_.reset();
   return true;
 }

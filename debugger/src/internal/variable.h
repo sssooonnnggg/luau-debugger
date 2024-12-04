@@ -12,9 +12,11 @@ class Variable {
  public:
   Scope getScope() const;
   bool isTable() const;
+  bool isUserData() const;
+  bool hasFields() const;
   std::string_view getName() const;
   std::string_view getValue() const;
-  std::string_view getType() const;
+  std::string getType() const;
 
   std::string setValue(Scope scope, const std::string& value);
 
@@ -24,9 +26,10 @@ class Variable {
            lua_State* L,
            std::string_view name,
            int level);
-  void registryTableFields(luau::debugger::VariableRegistry* registry,
-                           lua_State* L);
+  void addFields(luau::debugger::VariableRegistry* registry, lua_State* L);
+  Variable addField(lua_State* L, VariableRegistry* registry);
   std::string preprocessInput(const std::string& value);
+  bool getUserDataIterator(lua_State* L, int index);
 
  private:
   lua_State* L_ = nullptr;
