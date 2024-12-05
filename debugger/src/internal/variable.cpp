@@ -1,4 +1,6 @@
 #include <format>
+#include "internal/scope.h"
+#include "internal/utils/lua_utils.h"
 
 #include <lapi.h>
 #include <lobject.h>
@@ -19,7 +21,7 @@ Variable::Variable(VariableRegistry* registry,
     : L_(L), name_(name), level_(level) {
   type_ = lua_type(L, -1);
   value_ = lua_utils::type::toString(L, -1);
-  addFields(registry, L);
+  addScope(registry, L);
 }
 
 Scope Variable::getScope() const {
@@ -54,7 +56,7 @@ std::string Variable::setValue(Scope scope, const std::string& value) {
   if (!lua_utils::pushBreakEnv(L_, level_))
     throw std::runtime_error("Failed to push break environment");
 
-  auto result = lua_utils::eval(L_, preprocessInput(value), -1);
+  auto result = lua_utils::eval(L_, preprocess(value), -1);
   if (!result.has_value()) {
     auto error = lua_utils::type::toString(L_, -1);
     lua_pop(L_, 2);
@@ -105,17 +107,17 @@ std::string Variable::setValue(Scope scope, const std::string& value) {
   return new_value;
 }
 
-std::string Variable::preprocessInput(const std::string& value) {
+std::string Variable::preprocess(const std::string& input_value) {
   if (type_ == LUA_TSTRING)
-    return std::format("[[{}]]", value);
+    return std::format("[[{}]]", input_value);
   else if (type_ == LUA_TVECTOR)
-    return std::format("vector.create{}", value);
+    return std::format("vector.create{}", input_value);
 
-  return value;
+  return input_value;
 }
 
-void Variable::addFields(luau::debugger::VariableRegistry* registry,
-                         lua_State* L) {
+void Variable::addScope(luau::debugger::VariableRegistry* registry,
+                        lua_State* L) {
   if (!hasFields())
     return;
 
@@ -124,44 +126,58 @@ void Variable::addFields(luau::debugger::VariableRegistry* registry,
   else if (isUserData())
     scope_ = Scope::createUserData(L);
 
-  if (registry->isRegistered(scope_))
+  scope_.setName(name_);
+  scope_.setLevel(level_);
+
+  if (!registry->isRegistered(scope_))
+    registry->registerVariables(scope_, {});
+}
+
+void Variable::loadFields(luau::debugger::VariableRegistry* registry,
+                          const Scope& scope) {
+  auto* L = scope.getLuaState();
+  lua_utils::StackGuard guard(L);
+  if (!scope.pushRef())
     return;
 
-  lua_utils::StackGuard guard(L);
   int value_idx = lua_absindex(L, -1);
 
   // https://github.com/luau-lang/rfcs/blob/master/docs/generalized-iteration.md
   if (luaL_getmetafield(L, value_idx, "__iter"))
-    addIterFields(registry, L, value_idx);
-  else if (isTable())
-    addRawFields(registry, L, value_idx);
+    addIterFields(registry, L, scope, value_idx);
+  else if (scope.isTable())
+    addRawFields(registry, L, scope, value_idx);
 }
 
 void Variable::addRawFields(luau::debugger::VariableRegistry* registry,
                             lua_State* L,
+                            const Scope& scope,
                             int value_idx) {
-  auto [it, _] = registry->registerVariables(scope_, {});
-  auto& variables = it->second;
+  auto* variables = registry->getVariables(scope, false);
+  if (!variables)
+    return;
 
   lua_pushnil(L);
   while (lua_next(L, value_idx)) {
-    variables.emplace_back(addField(L, registry));
+    variables->emplace_back(addField(L, registry, scope));
     lua_pop(L, 1);
   }
 }
 
 void Variable::addIterFields(luau::debugger::VariableRegistry* registry,
                              lua_State* L,
+                             const Scope& scope,
                              int value_idx) {
-  auto [it, _] = registry->registerVariables(scope_, {});
-  auto& variables = it->second;
+  auto* variables = registry->getVariables(scope, false);
+  if (!variables)
+    return;
 
   lua_pushvalue(L, value_idx);
   int call_result = lua_pcall(L, 1, 3, 0);
   if (call_result != LUA_OK) {
     DEBUGGER_LOG_ERROR(
         "[Variable::registryFields] Failed to call __iter for {}, error: {}",
-        name_, lua_tostring(L, -1));
+        scope.getName(), lua_tostring(L, -1));
     return;
   }
 
@@ -176,12 +192,13 @@ void Variable::addIterFields(luau::debugger::VariableRegistry* registry,
     if (LUA_OK != lua_pcall(L, 2, 2, 0)) {
       DEBUGGER_LOG_ERROR(
           "[Variable::registryFields] Failed to call __iter for {}, error: {}",
-          name_, lua_tostring(L, -1));
+          scope.getName(), lua_tostring(L, -1));
       return;
     }
     if (lua_isnil(L, -2))
       return;
-    variables.emplace_back(addField(L, registry));
+
+    variables->emplace_back(addField(L, registry, scope));
 
     // pop value
     lua_pop(L, 1);
@@ -194,12 +211,14 @@ void Variable::addIterFields(luau::debugger::VariableRegistry* registry,
   }
 }
 
-Variable Variable::addField(lua_State* L, VariableRegistry* registry) {
+Variable Variable::addField(lua_State* L,
+                            VariableRegistry* registry,
+                            const Scope& scope) {
   bool number_index = lua_isnumber(L, -2);
   std::string field_name = lua_utils::type::toString(L, -2);
   if (number_index)
     field_name = std::format("[{}]", lua_tointeger(L, -2));
-  auto variable = registry->createVariable(L, field_name, level_);
+  auto variable = registry->createVariable(L, field_name, scope.getLevel());
   if (lua_isnumber(L, -2))
     variable.index_ = lua_tointeger(L, -2);
   return variable;

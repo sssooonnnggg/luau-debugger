@@ -4,6 +4,7 @@
 #include <internal/log.h>
 #include <internal/scope.h>
 #include <internal/variable_registry.h>
+#include <winscard.h>
 
 namespace luau::debugger {
 
@@ -27,11 +28,16 @@ bool VariableRegistry::isRegistered(Scope scope) const {
   return variables_.find(scope) != variables_.end();
 }
 
-std::vector<Variable>* VariableRegistry::getVariables(Scope scope) {
+std::vector<Variable>* VariableRegistry::getVariables(Scope scope, bool load) {
   auto it = variables_.find(scope);
   if (it == variables_.end()) {
     DEBUGGER_LOG_ERROR("Variable not found: {}", scope.getKey());
     return nullptr;
+  }
+
+  if (load && !it->first.isLoaded()) {
+    Variable::loadFields(this, it->first);
+    it->first.markLoaded();
   }
 
   return &it->second;
@@ -96,11 +102,11 @@ void VariableRegistry::updateStack(lua_State* L, int level) {
 }
 
 std::vector<Variable>* VariableRegistry::getLocals(int level) {
-  return getVariables(getLocalScope(level));
+  return getVariables(getLocalScope(level), false);
 }
 
 std::vector<Variable>* VariableRegistry::getUpvalues(int level) {
-  return getVariables(getUpvalueScope(level));
+  return getVariables(getUpvalueScope(level), false);
 }
 
 }  // namespace luau::debugger

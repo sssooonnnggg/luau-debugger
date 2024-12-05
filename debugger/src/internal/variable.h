@@ -20,22 +20,31 @@ class Variable {
 
   std::string setValue(Scope scope, const std::string& value);
 
+  static void loadFields(luau::debugger::VariableRegistry* registry,
+                         const Scope& scope);
+
  private:
   friend class VariableRegistry;
   Variable(VariableRegistry* registry,
            lua_State* L,
            std::string_view name,
            int level);
-  void addRawFields(luau::debugger::VariableRegistry* registry,
-                    lua_State* L,
-                    int value_idx);
-  void addIterFields(luau::debugger::VariableRegistry* registry,
-                     lua_State* L,
-                     int value_idx);
-  void addFields(luau::debugger::VariableRegistry* registry, lua_State* L);
-  Variable addField(lua_State* L, VariableRegistry* registry);
-  std::string preprocessInput(const std::string& value);
-  bool getUserDataIterator(lua_State* L, int index);
+  void addScope(luau::debugger::VariableRegistry* registry, lua_State* L);
+
+  static void addRawFields(luau::debugger::VariableRegistry* registry,
+                           lua_State* L,
+                           const Scope& scope,
+                           int value_idx);
+  static void addIterFields(luau::debugger::VariableRegistry* registry,
+                            lua_State* L,
+                            const Scope& scope,
+                            int value_idx);
+
+  static Variable addField(lua_State* L,
+                           VariableRegistry* registry,
+                           const Scope& scope);
+
+  std::string preprocess(const std::string& input_value);
 
  private:
   lua_State* L_ = nullptr;

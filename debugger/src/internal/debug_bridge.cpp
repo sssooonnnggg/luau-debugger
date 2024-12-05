@@ -156,7 +156,7 @@ VariablesResponse DebugBridge::getVariables(int reference) {
   if (!isDebugBreak())
     return {};
 
-  auto variables = variable_registry_.getVariables(Scope(reference));
+  auto variables = variable_registry_.getVariables(Scope(reference), true);
   if (variables == nullptr)
     return VariablesResponse{};
 

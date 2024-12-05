@@ -87,12 +87,23 @@ class Scope final {
 
   int getKey() const { return key_; }
   std::string_view getName() const { return name_; }
+  void setName(std::string name) { name_ = std::move(name); }
+  int getLevel() const { return level_; }
+  void setLevel(int level) { level_ = level; }
+  lua_State* getLuaState() const { return L_; }
 
   bool isLocal() const { return type_ == ScopeType::Local; }
   bool isUpvalue() const { return type_ == ScopeType::UpValue; }
   bool isTable() const { return type_ == ScopeType::Table; }
+  bool isUserData() const { return type_ == ScopeType::UserData; }
+  bool isLoaded() const {
+    if (!isTable() && !isUserData())
+      return true;
+    return loaded_;
+  }
+  bool markLoaded() const { return loaded_ = true; }
 
-  bool pushRef() {
+  bool pushRef() const {
     if (ref_ == LUA_REFNIL || L_ == nullptr)
       return false;
 
@@ -131,6 +142,8 @@ class Scope final {
   ScopeType type_ = ScopeType::Local;
   lua_State* L_ = nullptr;
   int ref_ = LUA_REFNIL;
+  mutable bool loaded_ = false;
+  int level_ = 0;
 };
 
 }  // namespace luau::debugger

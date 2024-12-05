@@ -28,7 +28,7 @@ class VariableRegistry {
   std::pair<Iter, bool> registerVariables(Scope scope,
                                           std::vector<Variable> variables);
   bool isRegistered(Scope scope) const;
-  std::vector<Variable>* getVariables(Scope scope);
+  std::vector<Variable>* getVariables(Scope scope, bool load);
   std::pair<const Scope, std::vector<Variable>>* getVariables(int reference);
 
  private:
