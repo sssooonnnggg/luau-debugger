@@ -1,7 +1,7 @@
 {
   "name": "luau-debugger",
   "displayName": "Luau Debugger Extension",
-  "version": "0.0.17",
+  "version": "0.0.18",
   "publisher": "sssooonnnggg",
   "description": "Luau debugger",
   "author": {
