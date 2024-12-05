@@ -395,6 +395,8 @@ void DebugBridge::processSingleStep(SingleStepProcessor processor) {
 }
 
 void DebugBridge::enableDebugStep(bool enable) {
+  if (break_vm_ == nullptr)
+    return;
   lua_State* L = vm_registry_.getRoot(break_vm_);
   auto callbacks = lua_callbacks(L);
   if (!enable) {
