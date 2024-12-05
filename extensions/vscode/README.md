@@ -90,7 +90,7 @@ A debugger for Luau with debug adapter protocol(DAP) support.
       - [x] table with cycle reference
     - [x] vector
     - [x] function
-    - [ ] userdata
+    - [x] userdata
   - [x] Set variables
   - [x] Repl
   - [x] Watch

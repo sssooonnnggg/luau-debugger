@@ -47,6 +47,12 @@ local function test_variables()
       }
       table_with_circle.b.d = table_with_circle
       table_with_circle.e.g = table_with_circle.b
+
+      local userdata = {}
+      setmetatable(userdata, { __iter = function(x)
+        return next, table_with_circle
+      end })
+
       local bar_function = function() end
       foo_string = "ghi"
       print("Hello, World!")

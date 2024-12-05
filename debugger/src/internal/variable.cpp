@@ -119,24 +119,78 @@ void Variable::addFields(luau::debugger::VariableRegistry* registry,
   if (!hasFields())
     return;
 
-  if (isTable()) {
-    scope_ = isTable() ? Scope::createTable(L) : Scope::createUserData(L);
+  if (isTable())
+    scope_ = Scope::createTable(L);
+  else if (isUserData())
+    scope_ = Scope::createUserData(L);
 
-    if (registry->isRegistered(scope_))
+  if (registry->isRegistered(scope_))
+    return;
+
+  lua_utils::StackGuard guard(L);
+  int value_idx = lua_absindex(L, -1);
+
+  // https://github.com/luau-lang/rfcs/blob/master/docs/generalized-iteration.md
+  if (luaL_getmetafield(L, value_idx, "__iter"))
+    addIterFields(registry, L, value_idx);
+  else if (isTable())
+    addRawFields(registry, L, value_idx);
+}
+
+void Variable::addRawFields(luau::debugger::VariableRegistry* registry,
+                            lua_State* L,
+                            int value_idx) {
+  auto [it, _] = registry->registerVariables(scope_, {});
+  auto& variables = it->second;
+
+  lua_pushnil(L);
+  while (lua_next(L, value_idx)) {
+    variables.emplace_back(addField(L, registry));
+    lua_pop(L, 1);
+  }
+}
+
+void Variable::addIterFields(luau::debugger::VariableRegistry* registry,
+                             lua_State* L,
+                             int value_idx) {
+  auto [it, _] = registry->registerVariables(scope_, {});
+  auto& variables = it->second;
+
+  lua_pushvalue(L, value_idx);
+  int call_result = lua_pcall(L, 1, 3, 0);
+  if (call_result != LUA_OK) {
+    DEBUGGER_LOG_ERROR(
+        "[Variable::registryFields] Failed to call __iter for {}, error: {}",
+        name_, lua_tostring(L, -1));
+    return;
+  }
+
+  auto next = lua_absindex(L, -3);
+  auto state = lua_absindex(L, -2);
+  auto init = lua_absindex(L, -1);
+
+  lua_pushvalue(L, next);
+  lua_pushvalue(L, state);
+  lua_pushvalue(L, init);
+  while (true) {
+    if (LUA_OK != lua_pcall(L, 2, 2, 0)) {
+      DEBUGGER_LOG_ERROR(
+          "[Variable::registryFields] Failed to call __iter for {}, error: {}",
+          name_, lua_tostring(L, -1));
       return;
-
-    auto [it, _] = registry->registerVariables(scope_, {});
-    auto& variables = it->second;
-
-    lua_utils::StackGuard guard(L);
-    int value_idx = lua_absindex(L, -1);
-
-    lua_checkstack(L, 2);
-    lua_pushnil(L);
-    while (lua_next(L, value_idx)) {
-      variables.emplace_back(addField(L, registry));
-      lua_pop(L, 1);
     }
+    if (lua_isnil(L, -2))
+      return;
+    variables.emplace_back(addField(L, registry));
+
+    // pop value
+    lua_pop(L, 1);
+
+    // prepare for next iteration
+    lua_pushvalue(L, next);
+    lua_pushvalue(L, state);
+    lua_pushvalue(L, -3);
+    lua_remove(L, -4);
   }
 }
 
@@ -150,22 +204,5 @@ Variable Variable::addField(lua_State* L, VariableRegistry* registry) {
     variable.index_ = lua_tointeger(L, -2);
   return variable;
 }
-
-// bool Variable::getUserDataIterator() {
-//   //
-//   https://github.com/luau-lang/rfcs/blob/master/docs/generalized-iteration.md
-//   if (!luaL_getmetafield(L, value_idx, "__iter")) {
-//     // No iterator for userdata, just return
-//     return;
-//   }
-
-//   int call_result = lua_pcall(L, 0, 3, 0);
-//   if (call_result != LUA_OK) {
-//     DEBUGGER_LOG_ERROR(
-//         "[Variable::registryFields] Failed to call __iter for {}, error: {}",
-//         name_, lua_tostring(L, -1));
-//     return;
-//   }
-// }
 
 }  // namespace luau::debugger

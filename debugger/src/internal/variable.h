@@ -26,6 +26,12 @@ class Variable {
            lua_State* L,
            std::string_view name,
            int level);
+  void addRawFields(luau::debugger::VariableRegistry* registry,
+                    lua_State* L,
+                    int value_idx);
+  void addIterFields(luau::debugger::VariableRegistry* registry,
+                     lua_State* L,
+                     int value_idx);
   void addFields(luau::debugger::VariableRegistry* registry, lua_State* L);
   Variable addField(lua_State* L, VariableRegistry* registry);
   std::string preprocessInput(const std::string& value);
