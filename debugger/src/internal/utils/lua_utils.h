@@ -37,4 +37,21 @@ class StackGuard {
   int top_;
 };
 
+class DisableDebugStep {
+ public:
+  DisableDebugStep(lua_State* L) {
+    main_vm_ = lua_mainthread(L);
+    callbacks_ = lua_callbacks(main_vm_);
+    old_debug_step_ = callbacks_->debugstep;
+    callbacks_->debugstep = nullptr;
+  }
+  ~DisableDebugStep() { callbacks_->debugstep = old_debug_step_; }
+
+ private:
+  lua_State* main_vm_;
+  lua_Callbacks* callbacks_;
+  using DebugStep = void (*)(lua_State*, lua_Debug*);
+  DebugStep old_debug_step_;
+};
+
 }  // namespace luau::debugger::lua_utils

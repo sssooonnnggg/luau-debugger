@@ -14,6 +14,7 @@ enum class ScopeType {
   Local,
   UpValue,
   Table,
+  UserData,
   Unknown,
 };
 
@@ -59,13 +60,17 @@ class Scope final {
   static Scope createTable(lua_State* L, int index = -1) {
     const TValue* t = luaA_toobject(L, index);
     auto* address = hvalue(t);
-    return createFromAddress<Table>(L, index, address);
+    auto scope = createFromAddress<Table>(L, index, address);
+    scope.type_ = ScopeType::Table;
+    return scope;
   }
 
   static Scope createUserData(lua_State* L, int index = -1) {
     const TValue* u = luaA_toobject(L, index);
     auto* address = uvalue(u);
-    return createFromAddress<Udata>(L, index, address);
+    auto scope = createFromAddress<Udata>(L, index, address);
+    scope.type_ = ScopeType::UserData;
+    return scope;
   }
 
   explicit Scope(int key) : key_(key) { type_ = ScopeType::Unknown; }
@@ -102,7 +107,6 @@ class Scope final {
     Scope scope;
     scope.L_ = L;
     scope.createKey(std::hash<const T*>{}(address));
-    scope.type_ = ScopeType::Table;
     scope.ref_ = lua_ref(L, index);
     return scope;
   }

@@ -124,6 +124,7 @@ StackTraceResponse DebugBridge::getStackTrace() {
 
   StackTraceResponse response;
   lua_State* L = break_vm_;
+  lua_utils::DisableDebugStep _(break_vm_);
 
   updateVariables();
   auto frames = updateStackFrames();
@@ -337,11 +338,9 @@ void DebugBridge::onConnect(dap::Session* session) {
 
 void DebugBridge::onDisconnect() {
   task_pool_.post([this] { clearBreakPoints(); });
-  std::scoped_lock lock(break_mutex_);
-  if (!resume_) {
-    resume_ = true;
-    resume_cv_.notify_one();
-  }
+
+  processSingleStep(nullptr);
+  resumeInternal();
   session_ = nullptr;
 }
 
