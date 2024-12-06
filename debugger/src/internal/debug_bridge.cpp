@@ -569,7 +569,7 @@ void DebugBridge::updateVariables() {
     lua_State* L = break_vm_;
 
     while (L != nullptr) {
-      variable_registry_.update(L);
+      variable_registry_.fetch(L);
       L = vm_registry_.getParent(L);
     }
   });

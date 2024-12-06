@@ -56,7 +56,7 @@ bool Debugger::listen(int port) {
 
 bool Debugger::stop() {
   closeSession();
-  server_->stop();  
+  server_->stop();
   debug_bridge_.reset();
   return true;
 }

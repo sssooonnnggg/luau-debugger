@@ -14,7 +14,7 @@ namespace luau::debugger {
 class VariableRegistry {
  public:
   void clear();
-  void update(lua_State* L);
+  void fetch(lua_State* L);
 
   Scope getLocalScope(int level);
   Scope getUpvalueScope(int level);
@@ -22,16 +22,15 @@ class VariableRegistry {
 
   Variable createVariable(lua_State* L, std::string_view name, int level);
 
-  using Iter = std::unordered_map<Scope, std::vector<Variable>>::iterator;
-  std::pair<Iter, bool> registerVariables(Scope scope,
-                                          std::vector<Variable> variables);
+  std::vector<Variable>* registerVariables(Scope scope,
+                                           std::vector<Variable> variables);
   bool isRegistered(Scope scope) const;
   std::vector<Variable>* getVariables(Scope scope, bool load);
   std::pair<const Scope, std::vector<Variable>>* getVariables(int reference);
 
  private:
-  void updateStack(lua_State* L, int level);
-  void updateGlobals(lua_State* L);
+  void fetchFromStack(lua_State* L, int level);
+  void fetchGlobals(lua_State* L);
 
  private:
   std::unordered_map<Scope, std::vector<Variable>> variables_;

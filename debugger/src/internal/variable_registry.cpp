@@ -14,14 +14,14 @@ Variable VariableRegistry::createVariable(lua_State* L,
   return Variable(this, L, name, level);
 }
 
-std::pair<VariableRegistry::Iter, bool> VariableRegistry::registerVariables(
+std::vector<Variable>* VariableRegistry::registerVariables(
     Scope scope,
     std::vector<Variable> variables) {
   auto result = variables_.try_emplace(scope, std::move(variables));
   if (!result.second)
     DEBUGGER_LOG_ERROR("Variable already registered: {}",
                        result.first->first.getName());
-  return result;
+  return &result.first->second;
 }
 
 bool VariableRegistry::isRegistered(Scope scope) const {
@@ -60,15 +60,15 @@ void VariableRegistry::clear() {
   depth_ = 0;
 }
 
-void VariableRegistry::update(lua_State* L) {
+void VariableRegistry::fetch(lua_State* L) {
   lua_Debug ar;
   for (int level = 0; lua_getinfo(L, level, "sln", &ar); ++level) {
     if (ar.what[0] == 'C')
       continue;
-    updateStack(L, level);
+    fetchFromStack(L, level);
     ++depth_;
   }
-  updateGlobals(L);
+  fetchGlobals(L);
 }
 
 Scope VariableRegistry::getLocalScope(int level) {
@@ -80,10 +80,10 @@ Scope VariableRegistry::getUpvalueScope(int level) {
 }
 
 Scope VariableRegistry::getGlobalScope() {
-  return Scope::createLocal("___globals__");
+  return Scope::createGlobal("___globals__");
 }
 
-void VariableRegistry::updateStack(lua_State* L, int level) {
+void VariableRegistry::fetchFromStack(lua_State* L, int level) {
   // Register local variables
   std::vector<Variable> variables;
   int index = 1;
@@ -106,7 +106,7 @@ void VariableRegistry::updateStack(lua_State* L, int level) {
   registerVariables(getUpvalueScope(depth_), upvalues);
 }
 
-void VariableRegistry::updateGlobals(lua_State* L) {
+void VariableRegistry::fetchGlobals(lua_State* L) {
   lua_utils::StackGuard guard(L);
   std::vector<Variable> globals;
   lua_pushnil(L);

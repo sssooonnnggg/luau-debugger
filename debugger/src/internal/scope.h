@@ -13,6 +13,7 @@ namespace luau::debugger {
 enum class ScopeType {
   Local,
   UpValue,
+  Global,
   Table,
   UserData,
   Unknown,
@@ -47,19 +48,15 @@ class Scope final {
   }
 
   static Scope createLocal(std::string_view name) {
-    Scope scope;
-    scope.createKey(std::hash<std::string_view>{}(name));
-    scope.type_ = ScopeType::Local;
-    scope.name_ = name;
-    return scope;
+    return createWithType(name, ScopeType::Local);
   }
 
   static Scope createUpvalue(std::string_view name) {
-    Scope scope;
-    scope.createKey(std::hash<std::string_view>{}(name));
-    scope.type_ = ScopeType::UpValue;
-    scope.name_ = name;
-    return scope;
+    return createWithType(name, ScopeType::UpValue);
+  }
+
+  static Scope createGlobal(std::string_view name) {
+    return createWithType(name, ScopeType::Global);
   }
 
   static Scope createTable(lua_State* L, int index = -1) {
@@ -118,6 +115,14 @@ class Scope final {
   }
 
  private:
+  static Scope createWithType(std::string_view name, ScopeType type) {
+    Scope scope;
+    scope.createKey(std::hash<std::string_view>{}(name));
+    scope.type_ = type;
+    scope.name_ = name;
+    return scope;
+  }
+
   template <class T>
   static Scope createFromAddress(lua_State* L, int index, const T* address) {
     Scope scope;
