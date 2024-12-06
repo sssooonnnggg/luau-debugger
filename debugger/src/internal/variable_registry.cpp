@@ -3,8 +3,8 @@
 
 #include <internal/log.h>
 #include <internal/scope.h>
+#include <internal/utils/lua_utils.h>
 #include <internal/variable_registry.h>
-#include <winscard.h>
 
 namespace luau::debugger {
 
@@ -68,6 +68,7 @@ void VariableRegistry::update(lua_State* L) {
     updateStack(L, level);
     ++depth_;
   }
+  updateGlobals(L);
 }
 
 Scope VariableRegistry::getLocalScope(int level) {
@@ -76,6 +77,10 @@ Scope VariableRegistry::getLocalScope(int level) {
 
 Scope VariableRegistry::getUpvalueScope(int level) {
   return Scope::createUpvalue(std::format("___upvalues__{}", level));
+}
+
+Scope VariableRegistry::getGlobalScope() {
+  return Scope::createLocal("___globals__");
 }
 
 void VariableRegistry::updateStack(lua_State* L, int level) {
@@ -101,12 +106,17 @@ void VariableRegistry::updateStack(lua_State* L, int level) {
   registerVariables(getUpvalueScope(depth_), upvalues);
 }
 
-std::vector<Variable>* VariableRegistry::getLocals(int level) {
-  return getVariables(getLocalScope(level), false);
-}
-
-std::vector<Variable>* VariableRegistry::getUpvalues(int level) {
-  return getVariables(getUpvalueScope(level), false);
+void VariableRegistry::updateGlobals(lua_State* L) {
+  lua_utils::StackGuard guard(L);
+  std::vector<Variable> globals;
+  lua_pushnil(L);
+  while (lua_next(L, LUA_GLOBALSINDEX)) {
+    std::string name = lua_utils::type::toString(L, -2);
+    globals.emplace_back(createVariable(L, name, -1));
+    lua_pop(L, 1);
+  }
+  lua_pop(L, 1);
+  registerVariables(getGlobalScope(), globals);
 }
 
 }  // namespace luau::debugger

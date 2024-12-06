@@ -1,4 +1,3 @@
-#include "file.h"
 #include <lua.h>
 #include <unordered_set>
 #include <utility>
@@ -6,6 +5,8 @@
 #include <internal/breakpoint.h>
 #include <internal/file.h>
 #include <internal/utils.h>
+
+#include "file.h"
 
 namespace luau::debugger {
 

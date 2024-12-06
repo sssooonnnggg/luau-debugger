@@ -145,7 +145,12 @@ ScopesResponse DebugBridge::getScopes(int level) {
       dap::Scope{.expensive = false,
                  .name = "Upvalues",
                  .variablesReference =
-                     variable_registry_.getUpvalueScope(level).getKey()}};
+                     variable_registry_.getUpvalueScope(level).getKey()},
+      dap::Scope{
+          .expensive = false,
+          .name = "Globals",
+          .variablesReference = variable_registry_.getGlobalScope().getKey()},
+  };
   return response;
 }
 
@@ -153,7 +158,10 @@ VariablesResponse DebugBridge::getVariables(int reference) {
   if (!isDebugBreak())
     return {};
 
-  auto variables = variable_registry_.getVariables(Scope(reference), true);
+  std::vector<Variable>* variables;
+  executeInMainThread([&]() {
+    variables = variable_registry_.getVariables(Scope(reference), true);
+  });
   if (variables == nullptr)
     return VariablesResponse{};
 
@@ -185,15 +193,20 @@ ResponseOrError<SetVariableResponse> DebugBridge::setVariable(
   if (it == variables.end())
     return Error{"Variable not found"};
 
-  std::string new_value;
-  try {
-    new_value = it->setValue(scope, request.value);
-  } catch (const std::exception& e) {
-    return Error{e.what()};
-  }
+  ResponseOrError<SetVariableResponse> response;
+  executeInMainThread([&]() {
+    std::string new_value;
+    try {
+      new_value = it->setValue(scope, request.value);
+    } catch (const std::exception& e) {
+      response = Error{e.what()};
+      return;
+    }
+    response = SetVariableResponse{
+        .value = new_value, .variablesReference = it->getScope().getKey()};
+  });
 
-  return SetVariableResponse{.value = new_value,
-                             .variablesReference = it->getScope().getKey()};
+  return response;
 }
 
 void DebugBridge::resume() {
@@ -479,8 +492,12 @@ ResponseOrError<EvaluateResponse> DebugBridge::evalWithEnv(
   for (int i = *ret; i >= 1; --i) {
     if (!response.type.has_value()) {
       response.type = lua_utils::type::getTypeName(lua_type(L, -i));
-      if (lua_istable(L, -i))
-        response.variablesReference = Scope::createTable(L, -i).getKey();
+
+      if (lua_istable(L, -i) || lua_isuserdata(L, -i)) {
+        auto scope = lua_istable(L, -i) ? Scope::createTable(L, -i)
+                                        : Scope::createUserData(L, -i);
+        response.variablesReference = scope.getKey();
+      }
     }
 
     result += lua_utils::type::toString(L, -i);
@@ -547,13 +564,15 @@ BreakPoint* DebugBridge::findBreakPoint(lua_State* L) {
 }
 
 void DebugBridge::updateVariables() {
-  variable_registry_.clear();
-  lua_State* L = break_vm_;
+  executeInMainThread([&] {
+    variable_registry_.clear();
+    lua_State* L = break_vm_;
 
-  while (L != nullptr) {
-    variable_registry_.update(L);
-    L = vm_registry_.getParent(L);
-  }
+    while (L != nullptr) {
+      variable_registry_.update(L);
+      L = vm_registry_.getParent(L);
+    }
+  });
 }
 
 std::vector<StackFrame> DebugBridge::updateStackFrames() {

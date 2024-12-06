@@ -204,6 +204,7 @@ bool Runtime::runFile(const char* name) {
   }
 
   lua_State* L = lua_newthread(vm_);
+  lua_setreadonly(L, LUA_GLOBALSINDEX, false);
 
   std::string chunkname = "=" + std::string(name);
 

@@ -1,6 +1,9 @@
 -- comment 1
 -- comment 2
 -- comment 3
+global_table = {
+  1, 2, 3, 4, 5
+}
 
 local function test_variables()
   local number = 3
@@ -49,9 +52,23 @@ local function test_variables()
       table_with_circle.e.g = table_with_circle.b
 
       local userdata = {}
-      setmetatable(userdata, { __iter = function(x)
-        return next, table_with_circle
-      end })
+      setmetatable(userdata, {
+        __iter = function(x)
+          return next, table_with_circle
+        end
+      })
+
+      local table_with_getter = {}
+      setmetatable(table_with_getter, {
+        __getters = {
+          a = function()
+            return 1
+          end,
+          b = function()
+            return 2
+          end
+        }
+      })
 
       local bar_function = function() end
       foo_string = "ghi"

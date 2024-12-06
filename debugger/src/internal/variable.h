@@ -39,10 +39,16 @@ class Variable {
                             lua_State* L,
                             const Scope& scope,
                             int value_idx);
+  static void addCustomFields(luau::debugger::VariableRegistry* registry,
+                              lua_State* L,
+                              const Scope& scope,
+                              int value_idx);
 
   static Variable addField(lua_State* L,
                            VariableRegistry* registry,
                            const Scope& scope);
+
+  static bool hasGetters(lua_State* L, int value_idx);
 
   std::string preprocess(const std::string& input_value);
 

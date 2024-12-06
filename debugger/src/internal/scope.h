@@ -26,6 +26,8 @@ class Scope final {
     key_ = other.key_;
     name_ = other.name_;
     type_ = other.type_;
+    loaded_ = other.loaded_;
+    level_ = other.level_;
 
     newRef(other.ref_);
   }
@@ -34,6 +36,9 @@ class Scope final {
     key_ = other.key_;
     name_ = std::move(other.name_);
     type_ = other.type_;
+    loaded_ = other.loaded_;
+    level_ = other.level_;
+
     newRef(other.ref_);
   }
   ~Scope() {

@@ -16,11 +16,9 @@ class VariableRegistry {
   void clear();
   void update(lua_State* L);
 
-  std::vector<Variable>* getLocals(int level);
-  std::vector<Variable>* getUpvalues(int level);
-
   Scope getLocalScope(int level);
   Scope getUpvalueScope(int level);
+  Scope getGlobalScope();
 
   Variable createVariable(lua_State* L, std::string_view name, int level);
 
@@ -33,6 +31,7 @@ class VariableRegistry {
 
  private:
   void updateStack(lua_State* L, int level);
+  void updateGlobals(lua_State* L);
 
  private:
   std::unordered_map<Scope, std::vector<Variable>> variables_;

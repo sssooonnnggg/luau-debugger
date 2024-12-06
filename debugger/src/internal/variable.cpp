@@ -73,10 +73,10 @@ std::string Variable::setValue(Scope scope, const std::string& value) {
     lua_pop(L_, ret_count - 1);
 
   auto new_value = lua_utils::type::toString(L_, -1);
-  if (scope.isTable()) {
+  if (scope.isTable() || scope.isUserData()) {
     if (scope.pushRef()) {
       // -1: key
-      // -2: table
+      // -2: table | userdata
       // -3: value
       // -4: env
       lua_checkstack(L_, 2);
@@ -145,6 +145,8 @@ void Variable::loadFields(luau::debugger::VariableRegistry* registry,
   // https://github.com/luau-lang/rfcs/blob/master/docs/generalized-iteration.md
   if (luaL_getmetafield(L, value_idx, "__iter"))
     addIterFields(registry, L, scope, value_idx);
+  else if (hasGetters(L, value_idx))
+    addCustomFields(registry, L, scope, value_idx);
   else if (scope.isTable())
     addRawFields(registry, L, scope, value_idx);
 }
@@ -209,6 +211,35 @@ void Variable::addIterFields(luau::debugger::VariableRegistry* registry,
     lua_pushvalue(L, -3);
     lua_remove(L, -4);
   }
+}
+
+void Variable::addCustomFields(luau::debugger::VariableRegistry* registry,
+                               lua_State* L,
+                               const Scope& scope,
+                               int value_idx) {
+  auto* variables = registry->getVariables(scope, false);
+  if (!variables)
+    return;
+
+  lua_pushnil(L);
+  while (lua_next(L, -2)) {
+    lua_pushvalue(L, value_idx);
+
+    // call getter to retrieve the value
+    lua_pcall(L, 1, 1, 0);
+    variables->emplace_back(addField(L, registry, scope));
+    lua_pop(L, 1);
+  }
+}
+
+bool Variable::hasGetters(lua_State* L, int value_idx) {
+  if (luaL_getmetafield(L, value_idx, "__getters") != 1)
+    return false;
+
+  if (!lua_istable(L, -1))
+    return false;
+
+  return true;
 }
 
 Variable Variable::addField(lua_State* L,
