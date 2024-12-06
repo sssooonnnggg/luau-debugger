@@ -99,10 +99,7 @@ void DebugBridge::onDebugBreak(lua_State* L,
 
   session_->send(event);
 
-  break_vm_ = L;
-  resume_ = false;
-  resume_cv_.wait(lock, [this] { return resume_; });
-  break_vm_ = nullptr;
+  mainThreadWait(L, lock);
 }
 
 std::string DebugBridge::stopReasonToString(BreakReason reason) const {
@@ -408,9 +405,12 @@ void DebugBridge::enableDebugStep(bool enable) {
 }
 
 void DebugBridge::resumeInternal() {
-  std::unique_lock<std::mutex> lock(break_mutex_);
-  DEBUGGER_LOG_INFO("[resume] Resume execution");
-  resume_ = true;
+  {
+    std::unique_lock<std::mutex> lock(break_mutex_);
+    DEBUGGER_LOG_INFO("[resume] Resume execution");
+    resume_ = true;
+  }
+
   resume_cv_.notify_one();
 }
 
@@ -422,17 +422,21 @@ ResponseOrError<EvaluateResponse> DebugBridge::evaluate(
   if (!request.context.has_value())
     return Error{"Evaluate request must have context"};
 
-  auto context = request.context.value();
-  DEBUGGER_LOG_INFO("[evaluate] Evaluate context: {}", context);
+  ResponseOrError<EvaluateResponse> response;
+  executeInMainThread([&] {
+    auto context = request.context.value();
+    DEBUGGER_LOG_INFO("[evaluate] Evaluate context: {}", context);
 
-  if (context == "repl")
-    return evaluateRepl(request);
-  else if (context == "watch")
-    return evaluateWatch(request);
-  else {
-    DEBUGGER_LOG_ERROR("[evaluate] Invalid evaluate context: {}", context);
-    return Error{"Invalid evaluate context"};
-  }
+    if (context == "repl")
+      response = evaluateRepl(request);
+    else if (context == "watch")
+      response = evaluateWatch(request);
+    else {
+      DEBUGGER_LOG_ERROR("[evaluate] Invalid evaluate context: {}", context);
+      response = Error{"Invalid evaluate context"};
+    }
+  });
+  return response;
 }
 
 ResponseOrError<EvaluateResponse> DebugBridge::evaluateRepl(
@@ -575,6 +579,33 @@ std::vector<StackFrame> DebugBridge::updateStackFrames() {
   }
 
   return frames;
+}
+
+void DebugBridge::mainThreadWait(lua_State* L,
+                                 std::unique_lock<std::mutex>& lock) {
+  break_vm_ = L;
+  resume_ = false;
+  while (!resume_) {
+    resume_cv_.wait(lock, [this] { return resume_ || main_fn_ != nullptr; });
+
+    // Execute main_fn_ if it's not empty
+    if (main_fn_ != nullptr) {
+      main_fn_();
+      main_fn_ = nullptr;
+      resume_cv_.notify_one();
+    }
+  }
+  break_vm_ = nullptr;
+}
+
+void DebugBridge::executeInMainThread(std::function<void()> fn) {
+  DEBUGGER_ASSERT(isDebugBreak());
+
+  // Fill the main_fn_ and wait for it to be executed
+  std::unique_lock<std::mutex> lock(break_mutex_);
+  main_fn_ = std::move(fn);
+  resume_cv_.notify_one();
+  resume_cv_.wait(lock, [this] { return main_fn_ == nullptr; });
 }
 
 }  // namespace luau::debugger

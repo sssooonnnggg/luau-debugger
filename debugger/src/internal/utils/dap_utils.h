@@ -1,10 +1,9 @@
 #pragma once
+#include <nlohmann_json_serializer.h>
+#include <concepts>
 
 #include <dap/protocol.h>
 #include <dap/typeof.h>
-#include <nlohmann_json_serializer.h>
-#include <concepts>
-#include <exception>
 
 #include <Luau/BytecodeBuilder.h>
 #include <Luau/Common.h>

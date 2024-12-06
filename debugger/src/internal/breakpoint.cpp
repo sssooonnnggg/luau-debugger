@@ -3,7 +3,7 @@
 #include <internal/breakpoint.h>
 #include <internal/log.h>
 #include <internal/utils.h>
-#include "internal/utils/lua_utils.h"
+#include <internal/utils/lua_utils.h>
 
 namespace luau::debugger {
 

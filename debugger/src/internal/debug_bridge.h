@@ -67,7 +67,6 @@ class DebugBridge final {
   StackTraceResponse getStackTrace();
 
   // Called from **DAP** client to get scopes for a frame
-  void extracted(int& level, lua_State*& L);
   ScopesResponse getScopes(int level);
 
   // Called from **DAP** client to get variable by variable reference
@@ -133,6 +132,9 @@ class DebugBridge final {
 
   std::vector<StackFrame> updateStackFrames();
 
+  void mainThreadWait(lua_State* L, std::unique_lock<std::mutex>& lock);
+  void executeInMainThread(std::function<void()> fn);
+
  private:
   friend class LuaStatics;
 
@@ -145,6 +147,7 @@ class DebugBridge final {
 
   lua_State* break_vm_ = nullptr;
   std::mutex break_mutex_;
+  std::function<void()> main_fn_;
   bool resume_ = false;
   std::condition_variable resume_cv_;
 

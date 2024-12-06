@@ -1,6 +1,4 @@
 #include <format>
-#include "internal/scope.h"
-#include "internal/utils/lua_utils.h"
 
 #include <lapi.h>
 #include <lobject.h>
@@ -9,7 +7,9 @@
 #include <lualib.h>
 
 #include <internal/log.h>
+#include <internal/scope.h>
 #include <internal/utils.h>
+#include <internal/utils/lua_utils.h>
 #include <internal/variable.h>
 #include <internal/variable_registry.h>
 
