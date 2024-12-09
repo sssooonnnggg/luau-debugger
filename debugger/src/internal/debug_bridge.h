@@ -14,6 +14,7 @@
 
 #include <internal/breakpoint.h>
 #include <internal/file.h>
+#include <internal/file_mapping.h>
 #include <internal/lua_statics.h>
 #include <internal/task_pool.h>
 #include <internal/variable.h>
@@ -39,7 +40,7 @@ class DebugBridge final {
   DebugBridge(bool stop_on_entry);
 
   void initialize(lua_State* L);
-  void setRoot(std::string_view root);
+  FileMapping& fileMapping() { return file_mapping_; }
   bool isDebugBreak();
 
   // Called from **lua runtime** after lua file is loaded
@@ -103,7 +104,6 @@ class DebugBridge final {
   void initializeCallbacks(lua_State* L);
   void captureOutput(lua_State* L);
 
-  std::string normalizePath(std::string_view path) const;
   bool isBreakOnEntry(lua_State* L);
 
   BreakContext getBreakContext(lua_State* L) const;
@@ -144,9 +144,9 @@ class DebugBridge final {
   friend class LuaStatics;
 
   VMRegistry vm_registry_;
+  FileMapping file_mapping_;
 
   bool stop_on_entry_ = false;
-  std::string entry_path_;
 
   std::unordered_map<std::string, File> files_;
 
@@ -165,7 +165,6 @@ class DebugBridge final {
   TaskPool interrupt_tasks_;
 
   SingleStepProcessor single_step_processor_ = nullptr;
-  std::string lua_root_;
 
   std::atomic<bool> should_pause_ = false;
 };

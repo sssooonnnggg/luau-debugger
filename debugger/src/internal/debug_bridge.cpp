@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <filesystem>
 #include <format>
 #include <mutex>
 #include <optional>
@@ -47,10 +46,6 @@ void DebugBridge::initialize(lua_State* L) {
   captureOutput(L);
 
   lua_singlestep(L, true);
-}
-
-void DebugBridge::setRoot(std::string_view root) {
-  lua_root_ = std::string(root);
 }
 
 void DebugBridge::initializeCallbacks(lua_State* L) {
@@ -163,6 +158,7 @@ VariablesResponse DebugBridge::getVariables(int reference) {
 
   std::vector<Variable>* variables;
   executeInMainThread([&]() {
+    lua_utils::DisableDebugStep _(break_vm_);
     variables = variable_registry_.getVariables(Scope(reference), true);
   });
   if (variables == nullptr)
@@ -229,7 +225,7 @@ void DebugBridge::pause() {
 void DebugBridge::onLuaFileLoaded(lua_State* L,
                                   std::string_view path,
                                   bool is_entry) {
-  auto normalized_path = normalizePath(path);
+  auto normalized_path = file_mapping_.normalize(path);
 
   auto it = files_.find(normalized_path);
   if (it == files_.end()) {
@@ -249,14 +245,14 @@ void DebugBridge::onLuaFileLoaded(lua_State* L,
 
   if (is_entry && stop_on_entry_) {
     it->second.addBreakPoint(1);
-    entry_path_ = normalized_path;
+    file_mapping_.setEntryPath(std::move(normalized_path));
   }
 }
 
 void DebugBridge::setBreakPoints(
     std::string_view path,
     optional<array<SourceBreakpoint>> breakpoints) {
-  std::string normalized_path = normalizePath(path);
+  std::string normalized_path = file_mapping_.normalize(path);
   interrupt_tasks_.post([this, normalized_path = std::move(normalized_path),
                          breakpoints = std::move(breakpoints)] {
     // Clear all breakpoints
@@ -295,18 +291,6 @@ void DebugBridge::setBreakPoints(
   });
 }
 
-std::string DebugBridge::normalizePath(std::string_view path) const {
-  if (path.empty())
-    return std::string{};
-  std::string prefix_removed =
-      std::string((path[0] == '@' || path[0] == '=') ? path.substr(1) : path);
-  if (std::filesystem::path(prefix_removed).is_relative())
-    prefix_removed = lua_root_ + "/" + prefix_removed;
-  std::string with_extension =
-      std::filesystem::path(prefix_removed).replace_extension(".lua").string();
-  return std::filesystem::weakly_canonical(with_extension).string();
-}
-
 BreakContext DebugBridge::getBreakContext(lua_State* L) const {
   lua_Debug ar;
   lua_getinfo(L, 0, "sl", &ar);
@@ -330,14 +314,14 @@ int DebugBridge::getStackDepth(lua_State* L) const {
 
 bool DebugBridge::isBreakOnEntry(lua_State* L) {
   auto context = getBreakContext(L);
-  auto it = files_.find(normalizePath(entry_path_));
+  auto it = files_.find(file_mapping_.entryPath());
   if (it == files_.end())
     return false;
   auto* bp = it->second.findBreakPoint(1);
   if (bp == nullptr)
     return false;
 
-  return entry_path_ == normalizePath(context.source_) &&
+  return file_mapping_.isEntryPath(context.source_) &&
          context.line_ == bp->targetLine();
 }
 
@@ -542,7 +526,7 @@ void DebugBridge::writeDebugConsole(std::string_view output,
   lua_Debug ar;
   if (L != nullptr && lua_getinfo(L, 1, "sln", &ar)) {
     event.line = ar.currentline;
-    event.source = dap::Source{.path = normalizePath(ar.source)};
+    event.source = dap::Source{.path = file_mapping_.normalize(ar.source)};
   }
 
   session_->send(std::move(event));
@@ -569,7 +553,7 @@ bool DebugBridge::hitBreakPoint(lua_State* L) {
 BreakPoint* DebugBridge::findBreakPoint(lua_State* L) {
   lua_Debug ar;
   lua_getinfo(L, 0, "sl", &ar);
-  auto it = files_.find(normalizePath(ar.source));
+  auto it = files_.find(file_mapping_.normalize(ar.source));
   if (it == files_.end())
     return nullptr;
 
@@ -602,7 +586,7 @@ std::vector<StackFrame> DebugBridge::refetchStackFrames() {
       frame.name = ar.name ? ar.name : "anonymous";
       frame.source = Source{};
       if (ar.source)
-        frame.source->path = normalizePath(ar.source);
+        frame.source->path = file_mapping_.normalize(ar.source);
       frame.line = ar.currentline;
       frames.emplace_back(std::move(frame));
       vm_stack_.push_back(L);

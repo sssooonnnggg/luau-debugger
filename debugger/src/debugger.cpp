@@ -11,6 +11,7 @@
 #include <dap/session.h>
 
 #include <internal/debug_bridge.h>
+#include <internal/file_mapping.h>
 #include <internal/utils.h>
 
 #include "debugger.h"
@@ -39,7 +40,7 @@ void Debugger::initialize(lua_State* L) {
 }
 
 void Debugger::setRoot(std::string_view root) {
-  debug_bridge_->setRoot(root);
+  debug_bridge_->fileMapping().setRootDirectory(root);
 }
 
 bool Debugger::listen(int port) {
