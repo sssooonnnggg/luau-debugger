@@ -302,7 +302,7 @@ BreakContext DebugBridge::getBreakContext(lua_State* L) const {
   lua_Debug ar;
   lua_getinfo(L, 0, "sl", &ar);
   return BreakContext{
-      .source_ = normalizePath(ar.source),
+      .source_ = ar.source,
       .line_ = ar.currentline,
       .depth_ = getStackDepth(L),
       .L_ = L,
@@ -328,7 +328,8 @@ bool DebugBridge::isBreakOnEntry(lua_State* L) {
   if (bp == nullptr)
     return false;
 
-  return entry_path_ == context.source_ && context.line_ == bp->targetLine();
+  return entry_path_ == normalizePath(context.source_) &&
+         context.line_ == bp->targetLine();
 }
 
 void DebugBridge::interruptUpdate() {
