@@ -14,7 +14,7 @@ namespace luau::debugger {
 class VariableRegistry {
  public:
   void clear();
-  void fetch(lua_State* L);
+  void update(std::vector<lua_State*> vms);
 
   Scope getLocalScope(int level);
   Scope getUpvalueScope(int level);
@@ -32,8 +32,10 @@ class VariableRegistry {
   std::pair<const Scope, std::vector<Variable>>* getVariables(int reference);
 
   void fetchGlobals(lua_State* L);
+  void clearDirtyScopes();
 
  private:
+  void fetch(lua_State* L);
   void fetchFromStack(lua_State* L, int level);
 
  private:

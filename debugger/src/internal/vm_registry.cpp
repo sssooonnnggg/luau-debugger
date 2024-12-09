@@ -48,4 +48,14 @@ void VMRegistry::markAlive(lua_State* L, lua_State* parent) {
 void VMRegistry::markDead(lua_State* L) {
   alive_threads_.erase(L);
 }
+
+std::vector<lua_State*> VMRegistry::getAncestors(lua_State* L) const {
+  std::vector<lua_State*> ancestors;
+  while (L != nullptr) {
+    ancestors.push_back(L);
+    L = getParent(L);
+  }
+  return ancestors;
+}
+
 }  // namespace luau::debugger

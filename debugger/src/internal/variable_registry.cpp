@@ -68,7 +68,18 @@ std::pair<const Scope, std::vector<Variable>>* VariableRegistry::getVariables(
 
 void VariableRegistry::clear() {
   variables_.clear();
+}
+
+void VariableRegistry::update(std::vector<lua_State*> vms) {
   depth_ = 0;
+  if (vms.empty())
+    return;
+
+  for (auto* L : vms)
+    fetch(L);
+
+  fetchGlobals(vms[0]);
+  clearDirtyScopes();
 }
 
 void VariableRegistry::fetch(lua_State* L) {
@@ -92,6 +103,14 @@ void VariableRegistry::fetchGlobals(lua_State* L) {
   }
   lua_pop(L, 1);
   registerOrUpdateVariables(getGlobalScope(), std::move(globals));
+}
+
+void VariableRegistry::clearDirtyScopes() {
+  for (auto& [scope, variables] : variables_)
+    if (scope.isTable() || scope.isUserData()) {
+      variables.clear();
+      scope.markUnloaded();
+    }
 }
 
 Scope VariableRegistry::getLocalScope(int level) {

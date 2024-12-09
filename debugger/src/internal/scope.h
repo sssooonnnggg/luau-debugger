@@ -104,6 +104,7 @@ class Scope final {
     return loaded_;
   }
   bool markLoaded() const { return loaded_ = true; }
+  bool markUnloaded() const { return loaded_ = false; }
 
   bool pushRef() const {
     if (ref_ == LUA_REFNIL || L_ == nullptr)

@@ -159,6 +159,8 @@ void Variable::addRawFields(luau::debugger::VariableRegistry* registry,
   if (!variables)
     return;
 
+  variables->clear();
+
   lua_pushnil(L);
   while (lua_next(L, value_idx)) {
     variables->emplace_back(addField(L, registry, scope));
@@ -173,6 +175,8 @@ void Variable::addIterFields(luau::debugger::VariableRegistry* registry,
   auto* variables = registry->getVariables(scope, false);
   if (!variables)
     return;
+
+  variables->clear();
 
   lua_pushvalue(L, value_idx);
   int call_result = lua_pcall(L, 1, 3, 0);
@@ -220,6 +224,8 @@ void Variable::addCustomFields(luau::debugger::VariableRegistry* registry,
   auto* variables = registry->getVariables(scope, false);
   if (!variables)
     return;
+
+  variables->clear();
 
   lua_pushnil(L);
   while (lua_next(L, -2)) {

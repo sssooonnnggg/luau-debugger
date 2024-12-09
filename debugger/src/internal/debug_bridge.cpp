@@ -496,6 +496,7 @@ ResponseOrError<EvaluateResponse> DebugBridge::evalWithEnv(
       if (lua_istable(L, -i) || lua_isuserdata(L, -i)) {
         auto scope = lua_istable(L, -i) ? Scope::createTable(L, -i)
                                         : Scope::createUserData(L, -i);
+        variable_registry_.registerVariables(scope, {});
         response.variablesReference = scope.getKey();
       }
     }
@@ -564,20 +565,14 @@ BreakPoint* DebugBridge::findBreakPoint(lua_State* L) {
 }
 
 void DebugBridge::refetchVariables() {
-  executeInMainThread([&] {
-    variable_registry_.clear();
-    lua_State* L = break_vm_;
-
-    while (L != nullptr) {
-      variable_registry_.fetch(L);
-      L = vm_registry_.getParent(L);
-    }
-
-    variable_registry_.fetchGlobals(break_vm_);
-  });
+  variable_registry_.clear();
+  updateVariables();
 }
 
-void DebugBridge::updateVariables() {}
+void DebugBridge::updateVariables() {
+  executeInMainThread(
+      [&] { variable_registry_.update(vm_registry_.getAncestors(break_vm_)); });
+}
 
 std::vector<StackFrame> DebugBridge::refetchStackFrames() {
   std::vector<StackFrame> frames;
