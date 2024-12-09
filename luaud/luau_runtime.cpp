@@ -206,7 +206,9 @@ bool Runtime::runFile(const char* name) {
   lua_State* L = lua_newthread(vm_);
   lua_setreadonly(L, LUA_GLOBALSINDEX, false);
 
-  std::string chunkname = "=" + std::string(name);
+  auto full_path =
+      std::filesystem::weakly_canonical(std::filesystem::path(name)).string();
+  std::string chunkname = "=" + full_path;
 
   std::string bytecode = Luau::compile(*source, copts());
   int status = 0;
@@ -214,7 +216,7 @@ bool Runtime::runFile(const char* name) {
   if (luau_load(L, chunkname.c_str(), bytecode.data(), bytecode.size(), 0) ==
       0) {
     // NOTICE: Call debugger when file is loaded
-    debugger_->onLuaFileLoaded(L, name, true);
+    debugger_->onLuaFileLoaded(L, full_path, true);
     status = lua_resume(L, NULL, 0);
   } else {
     status = LUA_ERRSYNTAX;
