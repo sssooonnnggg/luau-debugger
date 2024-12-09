@@ -153,7 +153,7 @@ class DebugBridge final {
   lua_State* break_vm_ = nullptr;
   std::mutex break_mutex_;
   std::function<void()> main_fn_;
-  bool resume_ = false;
+  bool resume_ = true;
   std::condition_variable resume_cv_;
 
   std::vector<lua_State*> vm_stack_;
