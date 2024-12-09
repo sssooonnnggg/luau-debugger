@@ -72,7 +72,7 @@ A debugger for Luau with debug adapter protocol(DAP) support.
     - [ ] Data breakpoints
     - [ ] Breakpoint hit count
   - [x] Continue
-  - [ ] Force break
+  - [x] Pause
   - [x] StackTrace
     - [x] StackTrace across coroutine boundary
     - [ ] Support switching stacktrace between different coroutines
@@ -80,7 +80,7 @@ A debugger for Luau with debug adapter protocol(DAP) support.
   - [x] Get variables
     - [x] Locals
     - [x] Upvalues
-  - [ ] Display variables
+  - [x] Display variables
     - [x] nil
     - [x] boolean
     - [x] number

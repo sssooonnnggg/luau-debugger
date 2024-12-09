@@ -2,6 +2,7 @@
 
 #include <lstate.h>
 #include <lua.h>
+#include <atomic>
 #include <condition_variable>
 #include <functional>
 #include <mutex>
@@ -47,7 +48,7 @@ class DebugBridge final {
   void onLuaFileLoaded(lua_State* L, std::string_view path, bool is_entry);
 
   // Called from **lua runtime** when debug break encountered
-  enum class BreakReason { Step, BreakPoint, Entry };
+  enum class BreakReason { Step, BreakPoint, Entry, Pause };
   void onDebugBreak(lua_State* L, lua_Debug* ar, BreakReason reason);
 
   // Called from **DAP** when client is ready
@@ -62,6 +63,9 @@ class DebugBridge final {
 
   // Called from **DAP** client to resume execution
   void resume();
+
+  // Called from **DAP** client to pause execution
+  void pause();
 
   // Called from **DAP** client to get current stack trace
   StackTraceResponse getStackTrace();
@@ -107,7 +111,7 @@ class DebugBridge final {
 
   std::string stopReasonToString(BreakReason reason) const;
 
-  void interruptUpdate();
+  void interruptUpdate(lua_State* L);
 
   void clearBreakPoints();
 
@@ -158,9 +162,11 @@ class DebugBridge final {
   std::condition_variable session_cv_;
 
   VariableRegistry variable_registry_;
-  TaskPool task_pool_;
+  TaskPool interrupt_tasks_;
 
   SingleStepProcessor single_step_processor_ = nullptr;
   std::string lua_root_;
+
+  std::atomic<bool> should_pause_ = false;
 };
 }  // namespace luau::debugger

@@ -29,7 +29,8 @@
 namespace luau::debugger {
 
 DebugBridge::DebugBridge(bool stop_on_entry)
-    : stop_on_entry_(stop_on_entry), task_pool_(std::this_thread::get_id()) {}
+    : stop_on_entry_(stop_on_entry),
+      interrupt_tasks_(std::this_thread::get_id()) {}
 
 DebugBridge* DebugBridge::get(lua_State* L) {
   lua_State* main_vm = lua_mainthread(L);
@@ -110,6 +111,8 @@ std::string DebugBridge::stopReasonToString(BreakReason reason) const {
       return "breakpoint";
     case BreakReason::Step:
       return "step";
+    case BreakReason::Pause:
+      return "pause";
     default:
       return "breakpoint";
   }
@@ -217,6 +220,12 @@ void DebugBridge::resume() {
   resumeInternal();
 }
 
+void DebugBridge::pause() {
+  if (isDebugBreak())
+    return;
+  should_pause_ = true;
+}
+
 void DebugBridge::onLuaFileLoaded(lua_State* L,
                                   std::string_view path,
                                   bool is_entry) {
@@ -248,8 +257,8 @@ void DebugBridge::setBreakPoints(
     std::string_view path,
     optional<array<SourceBreakpoint>> breakpoints) {
   std::string normalized_path = normalizePath(path);
-  task_pool_.post([this, normalized_path = std::move(normalized_path),
-                   breakpoints = std::move(breakpoints)] {
+  interrupt_tasks_.post([this, normalized_path = std::move(normalized_path),
+                         breakpoints = std::move(breakpoints)] {
     // Clear all breakpoints
     if (!breakpoints.has_value()) {
       DEBUGGER_LOG_INFO("[setBreakPoint] clear all breakpoints: {}",
@@ -332,8 +341,10 @@ bool DebugBridge::isBreakOnEntry(lua_State* L) {
          context.line_ == bp->targetLine();
 }
 
-void DebugBridge::interruptUpdate() {
-  task_pool_.process();
+void DebugBridge::interruptUpdate(lua_State* L) {
+  interrupt_tasks_.process();
+  if (should_pause_.exchange(false))
+    onDebugBreak(L, nullptr, BreakReason::Pause);
 }
 
 void DebugBridge::clearBreakPoints() {
@@ -348,7 +359,7 @@ void DebugBridge::onConnect(dap::Session* session) {
 }
 
 void DebugBridge::onDisconnect() {
-  task_pool_.post([this] { clearBreakPoints(); });
+  interrupt_tasks_.post([this] { clearBreakPoints(); });
 
   processSingleStep(nullptr);
   resumeInternal();
@@ -423,6 +434,7 @@ void DebugBridge::resumeInternal() {
     std::unique_lock<std::mutex> lock(break_mutex_);
     DEBUGGER_LOG_INFO("[resume] Resume execution");
     resume_ = true;
+    should_pause_ = false;
   }
 
   resume_cv_.notify_one();

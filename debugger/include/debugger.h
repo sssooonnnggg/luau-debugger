@@ -41,6 +41,7 @@ class DebugBridge;
   HANDLER(StepIn)                  \
   HANDLER(StepOut)                 \
   HANDLER(Evaluate)                \
+  HANDLER(Pause)                   \
   HANDLER(Disconnect)
 
 enum class DebugSession {

@@ -83,6 +83,7 @@ void VariableRegistry::update(std::vector<lua_State*> vms) {
 }
 
 void VariableRegistry::fetch(lua_State* L) {
+  lua_utils::StackGuard guard(L);
   lua_Debug ar;
   for (int level = 0; lua_getinfo(L, level, "sln", &ar); ++level) {
     if (ar.what[0] == 'C')

@@ -1,8 +1,9 @@
-#include <lua.h>
 #include <array>
 #include <cstdlib>
 #include <memory>
 #include <utility>
+
+#include <lua.h>
 
 #include <dap/io.h>
 #include <dap/network.h>
@@ -297,6 +298,14 @@ void Debugger::registerEvaluateHandler() {
         if (!res.error && should_invalidate)
           invalidateVariables();
       });
+}
+
+void Debugger::registerPauseHandler() {
+  session_->registerHandler([&](const dap::PauseRequest&) {
+    DEBUGGER_LOG_INFO("Server received pause request from client");
+    debug_bridge_->pause();
+    return dap::PauseResponse{};
+  });
 }
 
 void Debugger::invalidateVariables() {

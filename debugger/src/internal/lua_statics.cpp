@@ -31,7 +31,7 @@ void LuaStatics::interrupt(lua_State* L, int gc) {
   auto bridge = DebugBridge::get(L);
   if (bridge == nullptr)
     return;
-  bridge->interruptUpdate();
+  bridge->interruptUpdate(L);
 };
 
 void LuaStatics::userthread(lua_State* LP, lua_State* L) {

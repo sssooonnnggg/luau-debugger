@@ -54,7 +54,7 @@ std::string toString(lua_State* L, int index) {
 
 bool pushBreakEnv(lua_State* L, int level) {
   lua_Debug ar;
-  lua_checkstack(L, 5);
+  lua_checkstack(L, 10);
 
   // Create new table for break environment
   lua_newtable(L);

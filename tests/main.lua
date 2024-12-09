@@ -139,7 +139,7 @@ end
 
 local function test_error()
   -- error should output to debug console
-  abc.def()
+  -- abc.def()
 end
 
 local function test_print()
@@ -189,3 +189,8 @@ local function main()
 end
 
 main()
+
+
+-- while true do
+--   main()
+-- end
