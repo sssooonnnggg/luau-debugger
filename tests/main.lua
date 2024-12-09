@@ -102,6 +102,7 @@ end
 local math = require("./math/math")
 
 local function test_coroutine()
+  local v = vector.create(1, 2, 3)
   local test_coroutine = coroutine.create(function()
     print("coroutine start")
     local a = 1

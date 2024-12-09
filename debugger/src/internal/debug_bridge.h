@@ -76,6 +76,7 @@ class DebugBridge final {
   ResponseOrError<SetVariableResponse> setVariable(
       const SetVariableRequest& request);
 
+  void refetchVariables();
   void updateVariables();
 
   // Called from **DAP** client to step to next line
@@ -130,7 +131,7 @@ class DebugBridge final {
   bool hitBreakPoint(lua_State* L);
   BreakPoint* findBreakPoint(lua_State* L);
 
-  std::vector<StackFrame> updateStackFrames();
+  std::vector<StackFrame> refetchStackFrames();
 
   void mainThreadWait(lua_State* L, std::unique_lock<std::mutex>& lock);
   void executeInMainThread(std::function<void()> fn);

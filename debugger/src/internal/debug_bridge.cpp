@@ -123,8 +123,8 @@ StackTraceResponse DebugBridge::getStackTrace() {
   lua_State* L = break_vm_;
   lua_utils::DisableDebugStep _(break_vm_);
 
-  updateVariables();
-  auto frames = updateStackFrames();
+  refetchVariables();
+  auto frames = refetchStackFrames();
 
   response.stackFrames = frames;
   response.totalFrames = response.stackFrames.size();
@@ -563,7 +563,7 @@ BreakPoint* DebugBridge::findBreakPoint(lua_State* L) {
   return file.findBreakPoint(ar.currentline);
 }
 
-void DebugBridge::updateVariables() {
+void DebugBridge::refetchVariables() {
   executeInMainThread([&] {
     variable_registry_.clear();
     lua_State* L = break_vm_;
@@ -572,20 +572,25 @@ void DebugBridge::updateVariables() {
       variable_registry_.fetch(L);
       L = vm_registry_.getParent(L);
     }
+
+    variable_registry_.fetchGlobals(break_vm_);
   });
 }
 
-std::vector<StackFrame> DebugBridge::updateStackFrames() {
+void DebugBridge::updateVariables() {}
+
+std::vector<StackFrame> DebugBridge::refetchStackFrames() {
   std::vector<StackFrame> frames;
   lua_Debug ar;
   lua_State* L = break_vm_;
   vm_stack_.clear();
+  int depth = 0;
   while (L != nullptr) {
     for (int level = 0; lua_getinfo(L, level, "sln", &ar); ++level) {
       if (ar.what[0] == 'C')
         continue;
       StackFrame frame;
-      frame.id = level;
+      frame.id = depth++;
       frame.name = ar.name ? ar.name : "anonymous";
       frame.source = Source{};
       if (ar.source)

@@ -24,13 +24,17 @@ class VariableRegistry {
 
   std::vector<Variable>* registerVariables(Scope scope,
                                            std::vector<Variable> variables);
+  std::vector<Variable>* registerOrUpdateVariables(
+      Scope scope,
+      std::vector<Variable> variables);
   bool isRegistered(Scope scope) const;
   std::vector<Variable>* getVariables(Scope scope, bool load);
   std::pair<const Scope, std::vector<Variable>>* getVariables(int reference);
 
+  void fetchGlobals(lua_State* L);
+
  private:
   void fetchFromStack(lua_State* L, int level);
-  void fetchGlobals(lua_State* L);
 
  private:
   std::unordered_map<Scope, std::vector<Variable>> variables_;

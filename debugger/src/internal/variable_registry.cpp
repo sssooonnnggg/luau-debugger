@@ -24,6 +24,17 @@ std::vector<Variable>* VariableRegistry::registerVariables(
   return &result.first->second;
 }
 
+std::vector<Variable>* VariableRegistry::registerOrUpdateVariables(
+    Scope scope,
+    std::vector<Variable> variables) {
+  auto it = variables_.find(scope);
+  if (it == variables_.end())
+    return registerVariables(scope, std::move(variables));
+
+  it->second = std::move(variables);
+  return &it->second;
+}
+
 bool VariableRegistry::isRegistered(Scope scope) const {
   return variables_.find(scope) != variables_.end();
 }
@@ -68,7 +79,19 @@ void VariableRegistry::fetch(lua_State* L) {
     fetchFromStack(L, level);
     ++depth_;
   }
-  fetchGlobals(L);
+}
+
+void VariableRegistry::fetchGlobals(lua_State* L) {
+  lua_utils::StackGuard guard(L);
+  std::vector<Variable> globals;
+  lua_pushnil(L);
+  while (lua_next(L, LUA_GLOBALSINDEX)) {
+    std::string name = lua_utils::type::toString(L, -2);
+    globals.emplace_back(createVariable(L, name, -1));
+    lua_pop(L, 1);
+  }
+  lua_pop(L, 1);
+  registerOrUpdateVariables(getGlobalScope(), std::move(globals));
 }
 
 Scope VariableRegistry::getLocalScope(int level) {
@@ -91,7 +114,7 @@ void VariableRegistry::fetchFromStack(lua_State* L, int level) {
     variables.emplace_back(createVariable(L, name, level));
     lua_pop(L, 1);
   }
-  registerVariables(getLocalScope(depth_), variables);
+  registerOrUpdateVariables(getLocalScope(depth_), std::move(variables));
 
   // Register upvalues
   lua_Debug ar = {};
@@ -103,20 +126,7 @@ void VariableRegistry::fetchFromStack(lua_State* L, int level) {
     lua_pop(L, 1);
   }
   lua_pop(L, 1);
-  registerVariables(getUpvalueScope(depth_), upvalues);
-}
-
-void VariableRegistry::fetchGlobals(lua_State* L) {
-  lua_utils::StackGuard guard(L);
-  std::vector<Variable> globals;
-  lua_pushnil(L);
-  while (lua_next(L, LUA_GLOBALSINDEX)) {
-    std::string name = lua_utils::type::toString(L, -2);
-    globals.emplace_back(createVariable(L, name, -1));
-    lua_pop(L, 1);
-  }
-  lua_pop(L, 1);
-  registerVariables(getGlobalScope(), globals);
+  registerOrUpdateVariables(getUpvalueScope(depth_), std::move(upvalues));
 }
 
 }  // namespace luau::debugger
