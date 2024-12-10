@@ -11,7 +11,7 @@
       "program": "${workspaceRoot}/build/luaud/luaud.exe",
       "args": [
         "58000",
-        "${workspaceRoot}/tests/main.lua"
+        "${workspaceRoot}/tests/lua/main.lua"
       ],
       "stopAtEntry": false,
       "environment": [],
@@ -24,7 +24,7 @@
       "program": "${workspaceRoot}/build/luaud/luaud.exe",
       "args": [
         "58000",
-        "${workspaceRoot}/tests/main.lua"
+        "${workspaceRoot}/tests/lua/main.lua"
       ],
       "stopAtEntry": false,
       "environment": []

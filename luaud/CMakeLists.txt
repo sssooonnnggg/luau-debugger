@@ -1,6 +1,12 @@
 # luaud is a luau runtime combined with a luau debugger
 
-add_executable(luaud)
+if(ANDROID)
+  add_library(luaud SHARED)
+  target_link_libraries(luaud PRIVATE android log)
+else()
+  add_executable(luaud)
+endif()
+
 target_sources(luaud
   PRIVATE
   ${LUAU_ROOT}/CLI/Require.cpp

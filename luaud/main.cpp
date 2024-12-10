@@ -4,6 +4,10 @@
 #include <windows.h>
 #endif
 
+#if defined(__ANDROID__)
+#include <android/log.h>
+#endif
+
 #include "debugger.h"
 #include "luau_runtime.h"
 
@@ -13,7 +17,7 @@ void printToDebugConsole(std::string_view msg) {
 #endif
 }
 
-int main(int argc, char** argv) {
+int main(int argc, const char** argv) {
   // Disable buffering for stdout and stderr
   setvbuf(stdout, NULL, _IONBF, 0);
   setvbuf(stderr, NULL, _IONBF, 0);
@@ -23,9 +27,17 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  auto log_handler = [](std::string_view msg) { printf("%s", msg.data()); };
+  auto log_handler = [](std::string_view msg) {
+    printf("%s", msg.data());
+#if defined(__ANDROID__)
+    __android_log_print(ANDROID_LOG_INFO, "luaud", "%s", msg.data());
+#endif
+  };
   auto error_handler = [](std::string_view msg) {
     fprintf(stderr, "%s", msg.data());
+#if defined(__ANDROID__)
+    __android_log_print(ANDROID_LOG_ERROR, "luaud", "%s", msg.data());
+#endif
   };
 
   luau::debugger::log::install(log_handler, error_handler);
@@ -50,3 +62,29 @@ int main(int argc, char** argv) {
 
   return result ? 0 : -1;
 }
+
+#if defined(__ANDROID__)
+#include <jni.h>
+// export main function as extern "C" and exported for android
+extern "C" JNIEXPORT int JNICALL
+Java_com_example_test_1luau_1debugger_MainActivity_main(JNIEnv* env,
+                                                        jobject thiz,
+                                                        jint argc,
+                                                        jobjectArray argv) {
+  std::vector<jstring> jargs;
+  std::vector<const char*> args;
+  for (int i = 0; i < argc; i++) {
+    jstring arg = (jstring)env->GetObjectArrayElement(argv, i);
+    const char* native_string = env->GetStringUTFChars(arg, nullptr);
+    jargs.push_back(arg);
+    args.push_back(native_string);
+  }
+
+  int result = main(argc, args.data());
+
+  for (int i = 0; i < argc; i++)
+    env->ReleaseStringUTFChars(jargs[i], args[i]);
+
+  return result;
+}
+#endif
