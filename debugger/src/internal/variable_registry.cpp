@@ -102,7 +102,6 @@ void VariableRegistry::fetchGlobals(lua_State* L) {
     globals.emplace_back(createVariable(L, name, -1));
     lua_pop(L, 1);
   }
-  lua_pop(L, 1);
   registerOrUpdateVariables(getGlobalScope(), std::move(globals));
 }
 
