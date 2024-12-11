@@ -23,6 +23,16 @@
       "sourceMap": {
         "E:/test": "${workspaceFolder}"
       }
+    },
+    {
+      "type": "luau",
+      "request": "attach",
+      "name": "attach to Android",
+      "address": "10.1.110.211",
+      "port": 58000,
+      "sourceMap": {
+        "/sdcard/luau-debugger": "${workspaceFolder}"
+      }
     }
   ]
 }

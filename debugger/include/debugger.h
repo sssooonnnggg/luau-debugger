@@ -57,7 +57,6 @@ class Debugger {
   void setRoot(std::string_view root);
 
   bool listen(int port);
-  void tick();
   bool stop();
 
   void onLuaFileLoaded(lua_State* L, std::string_view path, bool is_entry);

@@ -47,7 +47,7 @@ bool Debugger::listen(int port) {
   using namespace dap::net;
   server_ = dap::net::Server::create();
   if (!server_->start(
-          port, [this](const auto& rw) { onClientConnected(rw); },
+          "0.0.0.0", port, [this](const auto& rw) { onClientConnected(rw); },
           [this](const char* msg) { onClientError(msg); })) {
     DEBUGGER_LOG_ERROR("Failed to start server on port {}", port);
     return false;
