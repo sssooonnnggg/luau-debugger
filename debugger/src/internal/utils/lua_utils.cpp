@@ -70,22 +70,22 @@ bool pushBreakEnv(lua_State* L, int level) {
   // Get function env
   lua_getfenv(L, -1);
 
-  // Copy function env to break env
   // -1: function env table
   // -2: function
   // -3: break env table
   int break_env = lua_absindex(L, -3);
-  lua_pushnil(L);
-  while (lua_next(L, -2)) {
-    lua_pushvalue(L, -2);
-    lua_pushvalue(L, -2);
-    lua_settable(L, break_env);
-    lua_pop(L, 1);
-  }
+  int fenv = lua_absindex(L, -1);
+
+  // set fenv as metatable
+  lua_newtable(L);
+  lua_pushstring(L, "__index");
+  lua_pushvalue(L, fenv);
+  lua_rawset(L, -3);
+  lua_setmetatable(L, break_env);
   lua_pop(L, 1);
 
   // -1: function
-  // -2: table
+  // -2: env table
 
   int index = 1;
   while (auto* name = lua_getlocal(L, level, index++)) {
