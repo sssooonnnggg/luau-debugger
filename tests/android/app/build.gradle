@@ -61,7 +61,7 @@ android {
 
     externalNativeBuild {
         cmake {
-            path "${projectDir}/../../../CMakeLists.txt"
+            path "${projectDir}/../../luau_debugger/CMakeLists.txt"
         }
     }
 }
