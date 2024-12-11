@@ -31,7 +31,8 @@
       "address": "10.1.110.211",
       "port": 58000,
       "sourceMap": {
-        "/sdcard/luau-debugger": "${workspaceFolder}"
+        "/sdcard/luau-debugger": "${workspaceFolder}",
+        "/storage/emulated/0/luau-debugger": "${workspaceFolder}"
       }
     }
   ]

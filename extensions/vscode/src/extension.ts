@@ -119,10 +119,8 @@ class LuauConfigurationProvider implements vscode.DebugConfigurationProvider {
     if (input != undefined && typeof input == 'object') {
       for (let key in input) {
         let value = input[key];
-        let resolved_key = path.resolve(key);
-        let resolved_value = path.resolve(value);
-        source_map.set(resolved_key, resolved_value);
-        reverse_source_map.set(resolved_value, resolved_key);
+        source_map.set(key, value);
+        reverse_source_map.set(value, key);
       }
     }
   }
@@ -169,12 +167,13 @@ class LuauDebugAdapterTrackerFactory implements vscode.DebugAdapterTrackerFactor
   private remappingSource(source: DebugProtocol.Source | undefined, source_map: Map<string, string>) {
     if (source && source.path) {
       let input_path = source.path;
-      input_path = path.resolve(input_path);
+      input_path = input_path;
       for (let [path, mapped] of source_map) {
         for (let p of [path[0].toLowerCase() + path.slice(1), path[0].toUpperCase() + path.slice(1)]) {
           if (input_path.startsWith(p)) {
             let mapped_path = input_path.replace(p, mapped);
-            source.path = mapped_path;
+            const is_posix = mapped.includes('/');
+            source.path = is_posix ? mapped_path.replace(/\\/g, '/') : mapped_path.replace(/\//g, '\\');
             break;
           }
         }
