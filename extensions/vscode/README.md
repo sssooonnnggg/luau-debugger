@@ -1,4 +1,4 @@
-# Luau debugger
+# Luau Debugger
 
 A debugger for Luau with debug adapter protocol(DAP) support.
 
@@ -60,6 +60,25 @@ A debugger for Luau with debug adapter protocol(DAP) support.
   - You can refer to the implementation of `luaud` which is a minimal luau runtime integrated with `luau-debugger`.
 - Run your project and debug the luau code using a configuration similar to `Attach`.
 
+### Source File Mapping
+
+- Source file mapping is used to map the source file path from remote debugger server to VSCode workspace. Example:
+  ```json
+  {
+    {
+      "type": "luau",
+      "request": "attach",
+      "name": "attach with source map",
+      "address": "localhost",
+      "port": 58000,
+      "sourceMap": {
+        "D:/my_lua_projects": "${workspaceFolder}"
+      }
+    }
+  }
+  ```
+  - The above configuration will map the source file path `D:/my_lua_projects/hello_world.lua` to `${workspaceFolder}/hello_world.lua`.
+
 ## Features
 
 - [ ] Debugger features
@@ -103,3 +122,4 @@ A debugger for Luau with debug adapter protocol(DAP) support.
   - [x] Print to debug console
   - [x] Coroutine
   - [x] Multiple lua vm
+  - [x] Source file mapping

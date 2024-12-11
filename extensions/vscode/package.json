@@ -1,7 +1,7 @@
 {
   "name": "luau-debugger",
   "displayName": "Luau Debugger Extension",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "sssooonnnggg",
   "description": "Luau debugger",
   "author": {
@@ -52,12 +52,30 @@
               "port": {
                 "type": "number",
                 "description": "Port of the Luau debugger to connect to"
+              },
+              "sourceMap": {
+                "description": "Source path remapping between running device to local machine, for example {\"/sdcard/some/path/lua_root\": \"${workspaceFolder}/lua\"}",
+                "type": "object",
+                "patternProperties": {
+                  ".*": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "default": {}
               }
-            }
+            },
+            "required": [
+              "address",
+              "port"
+            ]
           },
           "launch": {
             "required": [
-              "program"
+              "program",
+              "port"
             ],
             "properties": {
               "program": {
@@ -68,6 +86,9 @@
                 "type": "number",
                 "description": "Port of the Luau debugger",
                 "default": 58000
+              },
+              "sourceMap": {
+                "$ref": "#/contributes/debuggers/0/configurationAttributes/attach/properties/sourceMap"
               }
             }
           }

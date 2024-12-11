@@ -1,11 +1,11 @@
 {
   "configurations": [
     {
-        "type": "luau",
-        "request": "launch",
-        "name": "launch luau debugger",
-        "program": "${workspaceFolder}/main.lua",
-        "port": 58000
+      "type": "luau",
+      "request": "launch",
+      "name": "launch luau debugger",
+      "program": "${workspaceFolder}/main.lua",
+      "port": 58000
     },
     {
       "type": "luau",
@@ -13,6 +13,16 @@
       "name": "attach to luau debugger",
       "address": "localhost",
       "port": 58000
+    },
+    {
+      "type": "luau",
+      "request": "attach",
+      "name": "attach with source map",
+      "address": "localhost",
+      "port": 58000,
+      "sourceMap": {
+        "E:/test": "${workspaceFolder}"
+      }
     }
   ]
 }
