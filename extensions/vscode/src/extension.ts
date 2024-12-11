@@ -140,6 +140,7 @@ class LuauDebugAdapterTrackerFactory implements vscode.DebugAdapterTrackerFactor
           if (source && source.path)
             this.remappingSource(source, reverse_source_map);
         }
+        // output.appendLine(`-> ${JSON.stringify(msg)}`);
       },
       onDidSendMessage: (msg) => {
         // remapping stack trace
@@ -151,7 +152,14 @@ class LuauDebugAdapterTrackerFactory implements vscode.DebugAdapterTrackerFactor
               this.remappingSource(source, source_map);
           }
         }
-        output.appendLine(`<- ${JSON.stringify(msg)}`);
+        else if (msg.type == "response" && msg.success && msg.command == "variables") {
+          let response = msg as DebugProtocol.VariablesResponse;
+          // Sort variables by name
+          response.body.variables.sort((a, b) => {
+            return a.name.localeCompare(b.name);
+          });
+        }
+        // output.appendLine(`<- ${JSON.stringify(msg)}`);
       }
 
 
