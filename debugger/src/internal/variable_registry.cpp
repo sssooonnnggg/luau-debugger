@@ -95,9 +95,12 @@ void VariableRegistry::fetch(lua_State* L) {
 
 void VariableRegistry::fetchGlobals(lua_State* L) {
   lua_utils::StackGuard guard(L);
+  lua_Debug ar;
+  lua_getinfo(L, 0, "f", &ar);
+  lua_getfenv(L, -1);
   std::vector<Variable> globals;
   lua_pushnil(L);
-  while (lua_next(L, LUA_GLOBALSINDEX)) {
+  while (lua_next(L, -2)) {
     std::string name = lua_utils::type::toString(L, -2);
     globals.emplace_back(createVariable(L, name, -1));
     lua_pop(L, 1);
