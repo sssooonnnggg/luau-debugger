@@ -1,4 +1,5 @@
 #include <optional>
+#include <ranges>
 
 #include <lapi.h>
 #include <lobject.h>
@@ -160,20 +161,41 @@ Closure* getFunction(lua_State* L, int index) {
   return isLfunction(o) ? clvalue(o) : nullptr;
 }
 
-bool replaceGlobalFunction(lua_State* L,
-                           const std::string& name,
-                           lua_CFunction func) {
-  auto enable = lua_getreadonly(L, LUA_GLOBALSINDEX);
-  lua_setreadonly(L, LUA_GLOBALSINDEX, false);
+bool replaceOrCreateFunction(lua_State* L,
+                             const std::string& name,
+                             lua_CFunction func) {
+  ReadOnlyGuard _(L, LUA_GLOBALSINDEX);
   lua_getglobal(L, name.c_str());
-  bool result = false;
-  if (lua_isfunction(L, -1)) {
-    lua_pushcclosure(L, func, (name + " [debugger]").c_str(), 1);
-    lua_setglobal(L, name.c_str());
-    result = true;
-  }
-  lua_setreadonly(L, LUA_GLOBALSINDEX, enable);
+  bool result = lua_isfunction(L, -1);
+  std::string new_name = name + " [debugger]";
+  lua_pushcclosure(L, func, new_name.c_str(), 1);
+  lua_setglobal(L, name.c_str());
   return result;
 }
 
+bool replaceOrCreateFunction(lua_State* L,
+                             const std::string& library_name,
+                             const std::string& name,
+                             lua_CFunction func) {
+  StackGuard guard(L);
+  ReadOnlyGuard _(L, LUA_GLOBALSINDEX);
+  lua_getglobal(L, library_name.c_str());
+  if (!lua_istable(L, -1)) {
+    lua_pop(L, 1);
+    lua_newtable(L);
+    lua_pushvalue(L, -1);
+    lua_setglobal(L, library_name.c_str());
+  }
+
+  bool result;
+  {
+    ReadOnlyGuard _(L, lua_absindex(L, -1));
+    lua_getfield(L, -1, name.c_str());
+    result = lua_isfunction(L, -1);
+    std::string new_name = name + " [debugger]";
+    lua_pushcclosure(L, func, new_name.c_str(), 1);
+    lua_setfield(L, -2, name.c_str());
+  }
+  return result;
+}
 }  // namespace luau::debugger::lua_utils

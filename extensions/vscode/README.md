@@ -123,3 +123,4 @@ A debugger for Luau with debug adapter protocol(DAP) support.
   - [x] Coroutine
   - [x] Multiple lua vm
   - [x] Source file mapping
+  - [x] Break from lua code (Call debug.break_here())

@@ -44,7 +44,9 @@ void DebugBridge::initialize(lua_State* L) {
 
   initializeCallbacks(L);
 
-  lua_utils::replaceGlobalFunction(L, "print", LuaStatics::print);
+  lua_utils::replaceOrCreateFunction(L, "print", LuaStatics::print);
+  lua_utils::replaceOrCreateFunction(L, "debug", "break_here",
+                                     LuaStatics::break_here);
 
   lua_singlestep(L, true);
 }

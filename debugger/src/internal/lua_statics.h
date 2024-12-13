@@ -11,6 +11,8 @@ class LuaStatics {
   static void interrupt(lua_State* L, int gc);
   static void userthread(lua_State* LP, lua_State* L);
   static void debugstep(lua_State* L, lua_Debug* ar);
+
   static int print(lua_State* L);
+  static int break_here(lua_State* L);
 };
 }  // namespace luau::debugger

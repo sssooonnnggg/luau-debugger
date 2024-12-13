@@ -25,9 +25,16 @@ bool setUpvalue(lua_State* L, int level, const std::string& name, int index);
 
 Closure* getFunction(lua_State* L, int index);
 
-bool replaceGlobalFunction(lua_State* L,
-                           const std::string& name,
-                           lua_CFunction func);
+// Replace the function with the given name in the global table
+// If the function does not exist, create a new one and return false
+bool replaceOrCreateFunction(lua_State* L,
+                             const std::string& name,
+                             lua_CFunction func);
+
+bool replaceOrCreateFunction(lua_State* L,
+                             const std::string& library_name,
+                             const std::string& name,
+                             lua_CFunction func);
 
 class StackGuard {
  public:
@@ -39,6 +46,20 @@ class StackGuard {
  private:
   lua_State* L_;
   int top_;
+};
+
+class ReadOnlyGuard {
+ public:
+  ReadOnlyGuard(lua_State* L, int index) : L_(L), index_(index) {
+    enable_ = lua_getreadonly(L, index);
+    lua_setreadonly(L, index, false);
+  }
+  ~ReadOnlyGuard() { lua_setreadonly(L_, index_, enable_); }
+
+ private:
+  lua_State* L_;
+  int index_;
+  bool enable_;
 };
 
 class DisableDebugStep {

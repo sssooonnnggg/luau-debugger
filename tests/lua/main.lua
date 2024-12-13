@@ -176,6 +176,10 @@ local function test_self()
   mt:add(200)
 end
 
+local function test_break_from_code()
+  debug.break_here()
+end
+
 local function main()
   test_variables()
   test_step()
@@ -185,6 +189,7 @@ local function main()
   test_error()
   test_condition()
   test_self()
+  test_break_from_code()
   print('=============================================')
 end
 

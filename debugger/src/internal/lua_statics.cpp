@@ -87,4 +87,14 @@ int LuaStatics::print(lua_State* L) {
   bridge->writeDebugConsole(output, L, 1);
   return 0;
 }
+
+int LuaStatics::break_here(lua_State* L) {
+  auto bridge = DebugBridge::get(L);
+  if (bridge == nullptr)
+    return 0;
+
+  bridge->onDebugBreak(L, nullptr, DebugBridge::BreakReason::Pause);
+  return 0;
+}
+
 };  // namespace luau::debugger
