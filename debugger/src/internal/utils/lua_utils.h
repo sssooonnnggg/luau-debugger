@@ -25,6 +25,10 @@ bool setUpvalue(lua_State* L, int level, const std::string& name, int index);
 
 Closure* getFunction(lua_State* L, int index);
 
+bool replaceGlobalFunction(lua_State* L,
+                           const std::string& name,
+                           lua_CFunction func);
+
 class StackGuard {
  public:
   StackGuard(lua_State* L, int capacity = 5) : L_(L), top_(lua_gettop(L)) {

@@ -160,4 +160,20 @@ Closure* getFunction(lua_State* L, int index) {
   return isLfunction(o) ? clvalue(o) : nullptr;
 }
 
+bool replaceGlobalFunction(lua_State* L,
+                           const std::string& name,
+                           lua_CFunction func) {
+  auto enable = lua_getreadonly(L, LUA_GLOBALSINDEX);
+  lua_setreadonly(L, LUA_GLOBALSINDEX, false);
+  lua_getglobal(L, name.c_str());
+  bool result = false;
+  if (lua_isfunction(L, -1)) {
+    lua_pushcclosure(L, func, (name + " [debugger]").c_str(), 1);
+    lua_setglobal(L, name.c_str());
+    result = true;
+  }
+  lua_setreadonly(L, LUA_GLOBALSINDEX, enable);
+  return result;
+}
+
 }  // namespace luau::debugger::lua_utils

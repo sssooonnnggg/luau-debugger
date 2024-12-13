@@ -102,7 +102,6 @@ class DebugBridge final {
 
  private:
   void initializeCallbacks(lua_State* L);
-  void captureOutput(lua_State* L);
 
   bool isBreakOnEntry(lua_State* L);
 

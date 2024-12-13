@@ -43,7 +43,8 @@ void DebugBridge::initialize(lua_State* L) {
   vm_registry_.registerVM(L);
 
   initializeCallbacks(L);
-  captureOutput(L);
+
+  lua_utils::replaceGlobalFunction(L, "print", LuaStatics::print);
 
   lua_singlestep(L, true);
 }
@@ -53,18 +54,6 @@ void DebugBridge::initializeCallbacks(lua_State* L) {
   cb->debugbreak = LuaStatics::debugbreak;
   cb->interrupt = LuaStatics::interrupt;
   cb->userthread = LuaStatics::userthread;
-}
-
-void DebugBridge::captureOutput(lua_State* L) {
-  const char* global_print = "print";
-  auto enable = lua_getreadonly(L, LUA_GLOBALSINDEX);
-  lua_setreadonly(L, LUA_GLOBALSINDEX, false);
-  lua_getglobal(L, global_print);
-  if (lua_isfunction(L, -1)) {
-    lua_pushcclosure(L, LuaStatics::print, "debugprint", 1);
-    lua_setglobal(L, global_print);
-  }
-  lua_setreadonly(L, LUA_GLOBALSINDEX, enable);
 }
 
 bool DebugBridge::isDebugBreak() {
