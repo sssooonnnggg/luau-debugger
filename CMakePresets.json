@@ -46,6 +46,34 @@
       }
     },
     {
+      "name": "linux-clang-debug",
+      "displayName": "linux-clang-debug",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CPPDAP_BUILD_EXAMPLES": "ON",
+        "LUAU_BUILD_TESTS": "OFF",
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "linux-clang-release",
+      "displayName": "linux-clang-release",
+      "inherits": "linux-clang-debug",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "linux-clang-release",
+      "displayName": "linux-clang-release",
+      "inherits": "linux-clang-debug",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    }
+    {
       "name": "publish-configure",
       "displayName": "publish-configure",
       "generator": "Ninja",
@@ -86,6 +114,20 @@
       "name": "msvc-release-build",
       "displayName": "msvc-release-build",
       "configurePreset": "windows-msvc-release",
+      "configuration": "RelWithDebInfo",
+      "jobs": 32
+    },
+    {
+      "name": "linux-clang-debug-build",
+      "displayName": "linux-clang-debug-build",
+      "configurePreset": "linux-clang-debug",
+      "configuration": "Debug",
+      "jobs": 32
+    },
+    {
+      "name": "linux-clang-release-build",
+      "displayName": "linux-clang-release-build",
+      "configurePreset": "linux-clang-release",
       "configuration": "RelWithDebInfo",
       "jobs": 32
     },
