@@ -65,7 +65,7 @@
       }
     },
     {
-      "name": "publish-configure",
+      "name": "windows-publish-configure",
       "displayName": "publish-configure",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build",
@@ -123,7 +123,7 @@
       "jobs": 32
     },
     {
-      "name": "publish-build",
+      "name": "windows-publish-build",
       "displayName": "publish-build",
       "configurePreset": "publish-configure",
       "configuration": "RelWithDebInfo",

@@ -10,7 +10,10 @@ on:
 
 jobs:
   create-release:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        os: [{name: ubuntu, version: ubuntu-24.04}, {name: windows, version: windows-latest}]
+    runs-on: ${{matrix.os.version}}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,17 +33,29 @@ jobs:
         with:
           repository: luau-lang/luau
           path: luau
-          ref: 53e6e4b8f0b74e8770c41ff9bf7165ecfa9da1e2
-      - name: install compiler
+      - name: install compiler for windows
+        if: matrix.os.name == 'windows'
         run: |
           choco install ninja
           choco install llvm
-      - name: configure
-        run: cmake -DCPP_DAP_ROOT=${{ github.workspace }}/cppdap -DLUAU_ROOT=${{ github.workspace }}/luau . --preset publish-configure
-      - name: build
+      - name: configure for windows
+        if: matrix.os.name == 'windows'
+        run: cmake -DCPP_DAP_ROOT=${{ github.workspace }}/cppdap -DLUAU_ROOT=${{ github.workspace }}/luau . --preset windows-publish-configure
+      - name: build for windows
+        if: matrix.os.name == 'windows'
         run: cmake --build --preset publish-build
-      - name: pack
-        run: 7z a luaud.zip ${{ github.workspace }}\build\luaud\luaud.exe
+      - name: pack for windows
+        if: matrix.os.name == 'windows'
+        run: 7z a luaud-${{ matrix.os.name }}.zip ${{ github.workspace }}\build\luaud\luaud.exe
+      - name: configure for ubuntu
+        if: matrix.os.name == 'ubuntu'
+        run: cmake -DCPP_DAP_ROOT=${{ github.workspace }}/cppdap -DLUAU_ROOT=${{ github.workspace }}/luau . --preset linux-clang-release
+      - name: build for ubuntu
+        if: matrix.os.name == 'ubuntu'
+        run: cmake --build --preset linux-clang-release-build
+      - name: pack for ubuntu
+        if: matrix.os.name == 'ubuntu'
+        run: zip luaud--${{ matrix.os.name }}.zip ${{ github.workspace }}/build/luaud/luaud
       - uses: softprops/action-gh-release@v2
         with:
-          files: luaud.zip
+          files: luaud--${{ matrix.os.name }}.zip
