@@ -43,7 +43,7 @@ jobs:
         run: cmake -DCPP_DAP_ROOT=${{ github.workspace }}/cppdap -DLUAU_ROOT=${{ github.workspace }}/luau . --preset windows-publish-configure
       - name: build for windows
         if: matrix.os.name == 'windows'
-        run: cmake --build --preset publish-build
+        run: cmake --build --preset windows-publish-build
       - name: pack for windows
         if: matrix.os.name == 'windows'
         run: 7z a luaud-${{ matrix.os.name }}.zip ${{ github.workspace }}\build\luaud\luaud.exe
