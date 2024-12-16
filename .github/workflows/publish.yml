@@ -55,7 +55,7 @@ jobs:
         run: cmake --build --preset linux-clang-release-build
       - name: pack for ubuntu
         if: matrix.os.name == 'ubuntu'
-        run: zip luaud--${{ matrix.os.name }}.zip ${{ github.workspace }}/build/luaud/luaud
+        run: zip luaud-${{ matrix.os.name }}.zip ${{ github.workspace }}/build/luaud/luaud
       - uses: softprops/action-gh-release@v2
         with:
-          files: luaud--${{ matrix.os.name }}.zip
+          files: luaud-${{ matrix.os.name }}.zip
