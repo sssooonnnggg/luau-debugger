@@ -124,8 +124,8 @@
     },
     {
       "name": "windows-publish-build",
-      "displayName": "publish-build",
-      "configurePreset": "publish-configure",
+      "displayName": "windows-publish-build",
+      "configurePreset": "windows-publish-configure",
       "configuration": "RelWithDebInfo",
       "jobs": 32
     }
