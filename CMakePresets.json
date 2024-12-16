@@ -65,15 +65,6 @@
       }
     },
     {
-      "name": "linux-clang-release",
-      "displayName": "linux-clang-release",
-      "inherits": "linux-clang-debug",
-      "binaryDir": "${sourceDir}/build",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
-      }
-    }
-    {
       "name": "publish-configure",
       "displayName": "publish-configure",
       "generator": "Ninja",
