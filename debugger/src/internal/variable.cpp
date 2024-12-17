@@ -251,12 +251,12 @@ bool Variable::hasGetters(lua_State* L, int value_idx) {
 Variable Variable::addField(lua_State* L,
                             VariableRegistry* registry,
                             const Scope& scope) {
-  bool number_index = lua_isnumber(L, -2);
+  bool number_index = lua_type(L, -2) == LUA_TNUMBER;
   std::string field_name = lua_utils::type::toString(L, -2);
   if (number_index)
     field_name = std::format("[{}]", lua_tointeger(L, -2));
   auto variable = registry->createVariable(L, field_name, scope.getLevel());
-  if (lua_isnumber(L, -2))
+  if (number_index)
     variable.index_ = lua_tointeger(L, -2);
   return variable;
 }

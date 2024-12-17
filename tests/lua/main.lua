@@ -180,6 +180,17 @@ local function test_break_from_code()
   debug.break_here()
 end
 
+local function test_table_with_number_and_string_keys()
+  local table_with_number_idx = {
+    [1] = 1,
+    [2] = 2,
+    ["1"] = 2,
+    [100] = 100,
+    ["100"] = 200,
+  }
+  print(table_with_number_idx)
+end
+
 local function main()
   test_variables()
   test_step()
@@ -190,6 +201,7 @@ local function main()
   test_condition()
   test_self()
   test_break_from_code()
+  test_table_with_number_and_string_keys()
   print('=============================================')
 end
 
