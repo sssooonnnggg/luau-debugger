@@ -152,7 +152,10 @@ class LuauDebugAdapterTrackerFactory implements vscode.DebugAdapterTrackerFactor
         }
         else if (msg.type == "response" && msg.success && msg.command == "variables") {
           let response = msg as DebugProtocol.VariablesResponse;
-          // Sort variables by name
+          if (response.body.variables.findIndex(v => v.name.startsWith('[')) != -1)
+            return;
+
+          // Sort variables by name if not array
           response.body.variables.sort((a, b) => {
             return a.name.localeCompare(b.name);
           });
