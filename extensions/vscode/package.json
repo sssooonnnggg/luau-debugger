@@ -140,7 +140,7 @@
     "vscode:prepublish": "npm run fetch_debugger && npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "fetch_debugger": "node fetch_debugger.js"
+    "fetch_debugger": "node scripts/fetch_debugger.js"
   },
   "devDependencies": {
     "@types/node": "^17.0.21",
