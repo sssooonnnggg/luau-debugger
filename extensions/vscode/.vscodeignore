@@ -1,0 +1,8 @@
+node_modules/
+scripts/
+src/
+README.md
+tsconfig.json
+yarn.lock
+.vscode/
+*.zip
