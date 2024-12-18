@@ -9,7 +9,6 @@ endif()
 
 target_sources(luaud
   PRIVATE
-  ${LUAU_ROOT}/CLI/Require.cpp
   main.cpp
   luau_runtime.cpp
 )
