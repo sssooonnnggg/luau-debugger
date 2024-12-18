@@ -12,7 +12,8 @@ import { DebugProtocol } from "@vscode/debugprotocol";
 import { WorkspaceFolder, DebugConfiguration, ProviderResult, CancellationToken } from 'vscode';
 
 const LUAU_DEBUG_TYPE = 'luau';
-const LUAUD = process.platform == 'win32' ? 'luaud.exe' : 'luaud';
+const UNIX = process.platform != 'win32';
+const LUAUD = UNIX ? 'luaud' : 'luaud.exe';
 
 let output: vscode.OutputChannel;
 let source_map = new Map<string, string>();
@@ -31,10 +32,10 @@ export function deactivate() { }
 
 function killDebugger() {
   try {
-    if (process.platform == 'win32')
-      child_process.execSync(`taskkill /f /im ${LUAUD}`)
-    else
+    if (UNIX)
       child_process.execSync(`pkill ${LUAUD}`)
+    else
+      child_process.execSync(`taskkill /f /im ${LUAUD}`)
   } catch (e) { }
 }
 
@@ -43,6 +44,11 @@ async function spawnLuauDebugger(session: vscode.DebugSession): Promise<child_pr
   return new Promise((resolve, reject) => {
     const extension_folder = vscode.extensions.getExtension('sssooonnnggg.luau-debugger')!.extensionPath;
     const debugger_path = extension_folder + `/debugger/${LUAUD}`;
+
+    // make executable on *nix
+    if (UNIX)
+      child_process.execSync(`chmod +x ${debugger_path}`);
+
     if (vscode.workspace.workspaceFolders?.length == 0) {
       vscode.window.showErrorMessage('No workspace folder is opened.');
       return;
