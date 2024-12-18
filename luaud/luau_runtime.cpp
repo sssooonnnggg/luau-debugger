@@ -5,7 +5,6 @@
 
 #include <Luau/Common.h>
 #include <Luau/Compiler.h>
-#include <Require.h>
 #include <lua.h>
 #include <lualib.h>
 
