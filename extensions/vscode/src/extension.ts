@@ -7,11 +7,12 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as child_process from 'child_process';
 import * as readline from 'readline';
+import * as process from 'process';
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { WorkspaceFolder, DebugConfiguration, ProviderResult, CancellationToken } from 'vscode';
 
 const LUAU_DEBUG_TYPE = 'luau';
-const LUAUD = 'luaud.exe';
+const LUAUD = process.platform == 'win32' ? 'luaud.exe' : 'luaud';
 
 let output: vscode.OutputChannel;
 let source_map = new Map<string, string>();
@@ -29,7 +30,12 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() { }
 
 function killDebugger() {
-  try { child_process.execSync(`taskkill /f /im ${LUAUD}`) } catch (e) { }
+  try {
+    if (process.platform == 'win32')
+      child_process.execSync(`taskkill /f /im ${LUAUD}`)
+    else
+      child_process.execSync(`pkill ${LUAUD}`)
+  } catch (e) { }
 }
 
 async function spawnLuauDebugger(session: vscode.DebugSession): Promise<child_process.ChildProcessWithoutNullStreams | null> {

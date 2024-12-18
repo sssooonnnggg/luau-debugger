@@ -1,7 +1,7 @@
 {
   "name": "luau-debugger",
   "displayName": "Luau Debugger Extension",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "publisher": "sssooonnnggg",
   "description": "Luau debugger",
   "author": {
@@ -137,15 +137,17 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "node scripts/build_debugger.js && npm run compile",
+    "vscode:prepublish": "npm run fetch_debugger && npm run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "fetch_debugger": "node fetch_debugger.js"
   },
   "devDependencies": {
     "@types/node": "^17.0.21",
     "@types/vscode": "1.89.0",
     "@vscode/vsce": "2.26.1",
     "eslint": "^8.11.0",
+    "extract-zip": "^2.0.1",
     "typescript": "^4.0.2"
   },
   "dependencies": {
