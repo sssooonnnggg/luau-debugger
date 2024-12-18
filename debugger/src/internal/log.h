@@ -11,12 +11,12 @@
 namespace luau::debugger::log {
 using Logger = std::function<void(std::string_view)>;
 inline Logger& info() {
-  static Logger logger = [](std::string_vieww) { printf("%s", msg.data()); };
+  static Logger logger = [](std::string_view msg) { printf("%s", msg.data()); };
   return logger;
 }
 
 inline Logger& error() {
-  static Logger logger = [](std::string_view) {
+  static Logger logger = [](std::string_view msg) {
     fprintf(stderr, "%s", msg.data());
   };
   return logger;
