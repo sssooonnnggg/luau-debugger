@@ -1,4 +1,5 @@
 #include "vm_registry.h"
+#include "lua.h"
 
 namespace luau::debugger {
 
@@ -56,6 +57,13 @@ std::vector<lua_State*> VMRegistry::getAncestors(lua_State* L) const {
     L = getParent(L);
   }
   return ancestors;
+}
+
+std::vector<lua_State*> VMRegistry::getThreads() const {
+  std::vector<lua_State*> threads(alive_threads_.size());
+  for (auto [state, _] : alive_threads_)
+    threads.emplace_back(state);
+  return threads;
 }
 
 }  // namespace luau::debugger

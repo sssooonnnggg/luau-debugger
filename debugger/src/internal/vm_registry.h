@@ -18,6 +18,7 @@ class VMRegistry {
   void markDead(lua_State* L);
 
   std::vector<lua_State*> getAncestors(lua_State* L) const;
+  std::vector<lua_State*> getThreads() const;
 
  private:
   std::vector<lua_State*> lua_vms_;
