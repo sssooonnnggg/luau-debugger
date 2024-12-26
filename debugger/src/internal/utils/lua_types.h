@@ -3,6 +3,7 @@
 #include <string>
 
 #include <lua.h>
+#include <lualib.h>
 
 namespace luau::debugger::lua_utils::type {
 
@@ -15,6 +16,14 @@ concept Type = requires(T, lua_State* L, int index) {
 
 template <Type... T>
 struct TypeList;
+
+inline std::string toStringWithType(lua_State* L, int index, const char* type) {
+  lua_checkstack(L, 1);
+  const char* data = luaL_tolstring(L, index, nullptr);
+  auto result = std::format("{}", data);
+  lua_pop(L, 1);
+  return result;
+}
 
 class Nil {
  public:
@@ -71,7 +80,7 @@ class LightUserData {
   static constexpr lua_Type type = LUA_TLIGHTUSERDATA;
   static std::string typeName() { return lua_typename(nullptr, type); }
   static std::string toString(lua_State* L, int index) {
-    return "lightuserdata";
+    return toStringWithType(L, index, "lightuserdata");
   }
 };
 
@@ -79,28 +88,36 @@ class Table {
  public:
   static constexpr lua_Type type = LUA_TTABLE;
   static std::string typeName() { return lua_typename(nullptr, type); }
-  static std::string toString(lua_State* L, int index) { return "table"; }
+  static std::string toString(lua_State* L, int index) {
+    return toStringWithType(L, index, "table");
+  }
 };
 
 class Function {
  public:
   static constexpr lua_Type type = LUA_TFUNCTION;
   static std::string typeName() { return lua_typename(nullptr, type); }
-  static std::string toString(lua_State* L, int index) { return "function"; }
+  static std::string toString(lua_State* L, int index) {
+    return toStringWithType(L, index, "function");
+  }
 };
 
 class UserData {
  public:
   static constexpr lua_Type type = LUA_TUSERDATA;
   static std::string typeName() { return lua_typename(nullptr, type); }
-  static std::string toString(lua_State* L, int index) { return "userdata"; }
+  static std::string toString(lua_State* L, int index) {
+    return toStringWithType(L, index, "userdata");
+  }
 };
 
 class Thread {
  public:
   static constexpr lua_Type type = LUA_TTHREAD;
   static std::string typeName() { return lua_typename(nullptr, type); }
-  static std::string toString(lua_State* L, int index) { return "thread"; }
+  static std::string toString(lua_State* L, int index) {
+    return toStringWithType(L, index, "thread");
+  }
 };
 
 class Buffer {
