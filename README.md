@@ -29,6 +29,7 @@ See [extensions/vscode/README](./extensions/vscode/README.md)
 
 ## Build
 - Clone `cppdap` and `luau` repository to local
+- Inside `cppdap` root, run `git submodule update --init`
 - Build using CMake Presets with CLI or preset, for example with CLI:
   - `cmake -DLUAU_ROOT=<luau path> -DCPP_DAP_ROOT=<cppdap path> -S . -B build`
   - `cmake --build`
