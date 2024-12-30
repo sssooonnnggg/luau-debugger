@@ -33,13 +33,17 @@
     "breakpoints": [
       {
         "language": "lua"
+      },
+      {
+        "language": "luau"
       }
     ],
     "debuggers": [
       {
         "type": "luau",
         "languages": [
-          "lua"
+          "lua",
+          "luau"
         ],
         "label": "Luau Debug",
         "configurationAttributes": {
