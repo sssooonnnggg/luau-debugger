@@ -26,4 +26,8 @@ inline std::string toString(const T& t) {
   return s.dump();
 }
 
+inline int clamp(std::size_t value) {
+  return value & 0x7FFFFFFF;
+}
+
 }  // namespace luau::debugger::dap_utils

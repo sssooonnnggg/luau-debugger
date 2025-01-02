@@ -70,25 +70,29 @@ void VariableRegistry::clear() {
   variables_.clear();
 }
 
-void VariableRegistry::update(std::vector<lua_State*> vms) {
-  depth_ = 0;
-  if (vms.empty())
+void VariableRegistry::update(
+    std::vector<std::vector<lua_State*>> vm_with_ancestors) {
+  if (vm_with_ancestors.empty())
     return;
 
-  for (auto* L : vms)
-    fetch(L);
+  for (const auto& chain : vm_with_ancestors) {
+    depth_ = 0;
+    lua_State* src = chain[0];
+    for (lua_State* L : chain)
+      fetch(L, src);
+  }
 
-  fetchGlobals(vms[0]);
+  fetchGlobals(vm_with_ancestors[0][0]);
   clearDirtyScopes();
 }
 
-void VariableRegistry::fetch(lua_State* L) {
+void VariableRegistry::fetch(lua_State* L, lua_State* src) {
   lua_utils::StackGuard guard(L);
   lua_Debug ar;
   for (int level = 0; lua_getinfo(L, level, "sln", &ar); ++level) {
     if (ar.what[0] == 'C')
       continue;
-    fetchFromStack(L, level);
+    fetchFromStack(L, level, src);
     ++depth_;
   }
 }
@@ -116,19 +120,21 @@ void VariableRegistry::clearDirtyScopes() {
     }
 }
 
-Scope VariableRegistry::getLocalScope(int level) {
-  return Scope::createLocal(std::format("___locals__{}", level));
+Scope VariableRegistry::getLocalScope(lua_State* L, int level) {
+  return Scope::createLocal(
+      std::format("___locals__{}_{}", level, static_cast<void*>(L)));
 }
 
-Scope VariableRegistry::getUpvalueScope(int level) {
-  return Scope::createUpvalue(std::format("___upvalues__{}", level));
+Scope VariableRegistry::getUpvalueScope(lua_State* L, int level) {
+  return Scope::createUpvalue(
+      std::format("___upvalues__{}_{}", level, static_cast<void*>(L)));
 }
 
 Scope VariableRegistry::getGlobalScope() {
   return Scope::createGlobal("___globals__");
 }
 
-void VariableRegistry::fetchFromStack(lua_State* L, int level) {
+void VariableRegistry::fetchFromStack(lua_State* L, int level, lua_State* src) {
   // Register local variables
   std::vector<Variable> variables;
   int index = 1;
@@ -136,7 +142,7 @@ void VariableRegistry::fetchFromStack(lua_State* L, int level) {
     variables.emplace_back(createVariable(L, name, level));
     lua_pop(L, 1);
   }
-  registerOrUpdateVariables(getLocalScope(depth_), std::move(variables));
+  registerOrUpdateVariables(getLocalScope(L, depth_), std::move(variables));
 
   // Register upvalues
   lua_Debug ar = {};
@@ -148,7 +154,7 @@ void VariableRegistry::fetchFromStack(lua_State* L, int level) {
     lua_pop(L, 1);
   }
   lua_pop(L, 1);
-  registerOrUpdateVariables(getUpvalueScope(depth_), std::move(upvalues));
+  registerOrUpdateVariables(getUpvalueScope(L, depth_), std::move(upvalues));
 }
 
 }  // namespace luau::debugger

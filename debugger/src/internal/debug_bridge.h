@@ -4,10 +4,13 @@
 #include <lua.h>
 #include <atomic>
 #include <condition_variable>
+#include <cstdint>
 #include <functional>
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include "dap/protocol.h"
+#include "dap/types.h"
 
 #include <dap/protocol.h>
 #include <dap/session.h>
@@ -29,6 +32,11 @@ struct BreakContext {
   int depth_ = 0;
   lua_State* L_ = nullptr;
   auto operator<=>(const BreakContext&) const = default;
+};
+
+struct StackFrameInfo {
+  lua_State* L_ = nullptr;
+  int depth_ = 0;
 };
 
 using namespace dap;
@@ -69,10 +77,10 @@ class DebugBridge final {
   void pause();
 
   // Called from **DAP** client to get current stack trace
-  StackTraceResponse getStackTrace();
+  StackTraceResponse getStackTrace(std::int64_t threadId);
 
   // Called from **DAP** client to get scopes for a frame
-  ScopesResponse getScopes(int level);
+  ScopesResponse getScopes(int frameId);
 
   // Called from **DAP** client to get variable by variable reference
   VariablesResponse getVariables(int reference);
@@ -81,7 +89,6 @@ class DebugBridge final {
   ResponseOrError<SetVariableResponse> setVariable(
       const SetVariableRequest& request);
 
-  void refetchVariables();
   void updateVariables();
 
   // Called from **DAP** client to step to next line
@@ -99,6 +106,8 @@ class DebugBridge final {
   void writeDebugConsole(std::string_view msg, lua_State* L, int level = 0);
 
   VMRegistry& vms() { return vm_registry_; }
+
+  dap::array<dap::Thread> getThreads();
 
  private:
   void initializeCallbacks(lua_State* L);
@@ -134,7 +143,7 @@ class DebugBridge final {
   bool hitBreakPoint(lua_State* L);
   BreakPoint* findBreakPoint(lua_State* L);
 
-  std::vector<StackFrame> refetchStackFrames();
+  std::vector<StackFrame> updateStackFrames(lua_State* L);
 
   void mainThreadWait(lua_State* L, std::unique_lock<std::mutex>& lock);
   void executeInMainThread(std::function<void()> fn);
@@ -155,7 +164,7 @@ class DebugBridge final {
   bool resume_ = true;
   std::condition_variable resume_cv_;
 
-  std::vector<lua_State*> vm_stack_;
+  std::vector<StackFrameInfo> stack_frames_;
 
   dap::Session* session_ = nullptr;
   std::condition_variable session_cv_;

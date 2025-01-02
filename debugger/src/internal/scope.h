@@ -3,6 +3,7 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include "utils/dap_utils.h"
 
 #include <lapi.h>
 #include <lstate.h>
@@ -133,7 +134,7 @@ class Scope final {
     return scope;
   }
 
-  void createKey(std::size_t hash) { key_ = hash & MASK; }
+  void createKey(std::size_t hash) { key_ = dap_utils::clamp(hash); }
 
   void newRef(int ref) {
     if (ref == LUA_REFNIL)
@@ -146,8 +147,6 @@ class Scope final {
   }
 
  private:
-  // The key should be limited to (0, 2^31)
-  inline static constexpr auto MASK = 0x7FFFFFFF;
   int key_ = 0;
   std::string name_;
   ScopeType type_ = ScopeType::Local;

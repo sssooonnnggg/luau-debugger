@@ -210,7 +210,7 @@ void Debugger::registerThreadsHandler() {
   session_->registerHandler([&](const dap::ThreadsRequest&) {
     DEBUGGER_LOG_INFO("Server received threads request from client");
     dap::ThreadsResponse response;
-    response.threads = {dap::Thread{1, "Main Thread"}};
+    response.threads = debug_bridge_->getThreads();
     return response;
   });
 }
@@ -221,7 +221,7 @@ void Debugger::registerStackTraceHandler() {
           -> dap::ResponseOrError<dap::StackTraceResponse> {
         DEBUGGER_LOG_INFO("Server received stackTrace request from client: {}",
                           dap_utils::toString(request));
-        return debug_bridge_->getStackTrace();
+        return debug_bridge_->getStackTrace(request.threadId);
       });
 }
 

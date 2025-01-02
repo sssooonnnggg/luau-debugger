@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstdint>
 #include <format>
 #include <mutex>
 #include <optional>
@@ -22,8 +23,10 @@
 #include <internal/utils.h>
 #include <internal/utils/lua_types.h>
 #include <internal/variable.h>
+#include <internal/vm_registry.h>
 
 #include "debugger.h"
+#include "internal/utils/dap_utils.h"
 
 namespace luau::debugger {
 
@@ -69,7 +72,7 @@ void DebugBridge::onDebugBreak(lua_State* L,
   std::unique_lock<std::mutex> lock(break_mutex_);
 
   dap::StoppedEvent event{.reason = stopReasonToString(reason)};
-  event.threadId = 1;
+  event.allThreadsStopped = true;
   if (reason == BreakReason::Entry) {
     if (session_ == nullptr) {
       DEBUGGER_LOG_INFO(
@@ -104,25 +107,30 @@ std::string DebugBridge::stopReasonToString(BreakReason reason) const {
   }
 }
 
-StackTraceResponse DebugBridge::getStackTrace() {
+StackTraceResponse DebugBridge::getStackTrace(std::int64_t threadId) {
   if (!isDebugBreak())
     return StackTraceResponse{};
 
+  lua_State* L = vm_registry_.getThread(static_cast<int>(threadId));
+
   StackTraceResponse response;
-  lua_State* L = break_vm_;
   lua_utils::DisableDebugStep _(break_vm_);
 
-  refetchVariables();
-  auto frames = refetchStackFrames();
+  auto frames = updateStackFrames(L);
 
   response.stackFrames = frames;
   response.totalFrames = response.stackFrames.size();
   return response;
 }
 
-ScopesResponse DebugBridge::getScopes(int level) {
+ScopesResponse DebugBridge::getScopes(int frameId) {
   if (!isDebugBreak())
     return {};
+
+  if (frameId < 0 || frameId >= stack_frames_.size())
+    return {};
+
+  const auto& frame = stack_frames_[frameId];
 
   ScopesResponse response;
 
@@ -130,11 +138,13 @@ ScopesResponse DebugBridge::getScopes(int level) {
       dap::Scope{.expensive = false,
                  .name = "Local",
                  .variablesReference =
-                     variable_registry_.getLocalScope(level).getKey()},
+                     variable_registry_.getLocalScope(frame.L_, frame.depth_)
+                         .getKey()},
       dap::Scope{.expensive = false,
                  .name = "Upvalues",
                  .variablesReference =
-                     variable_registry_.getUpvalueScope(level).getKey()},
+                     variable_registry_.getUpvalueScope(frame.L_, frame.depth_)
+                         .getKey()},
       dap::Scope{
           .expensive = false,
           .name = "Globals",
@@ -461,8 +471,8 @@ ResponseOrError<EvaluateResponse> DebugBridge::evalWithEnv(
   if (request.frameId.has_value())
     level = request.frameId.value();
 
-  DEBUGGER_ASSERT(level >= 0 && level < vm_stack_.size());
-  lua_State* L = vm_stack_[level];
+  DEBUGGER_ASSERT(level >= 0 && level < stack_frames_.size());
+  lua_State* L = stack_frames_[level].L_;
 
   if (!lua_utils::pushBreakEnv(L, level))
     return Error{"Failed to push break environment"};
@@ -523,6 +533,19 @@ void DebugBridge::writeDebugConsole(std::string_view output,
   session_->send(std::move(event));
 }
 
+dap::array<dap::Thread> DebugBridge::getThreads() {
+  dap::array<dap::Thread> threads;
+  for (const auto& thread : vm_registry_.getThreads()) {
+    // TODO: process more threads
+    if (thread.parent_ != nullptr && thread.L_ != break_vm_ ||
+        getStackDepth(thread.L_) == 0)
+      continue;
+    threads.emplace_back(dap::Thread{.id = thread.key_, .name = thread.name_});
+  }
+
+  return threads;
+}
+
 bool DebugBridge::hitBreakPoint(lua_State* L) {
   auto* bp = findBreakPoint(L);
   if (bp == nullptr)
@@ -552,21 +575,15 @@ BreakPoint* DebugBridge::findBreakPoint(lua_State* L) {
   return file.findBreakPoint(ar.currentline);
 }
 
-void DebugBridge::refetchVariables() {
-  variable_registry_.clear();
-  updateVariables();
-}
-
 void DebugBridge::updateVariables() {
-  executeInMainThread(
-      [&] { variable_registry_.update(vm_registry_.getAncestors(break_vm_)); });
+  executeInMainThread([&] {
+    variable_registry_.update(vm_registry_.getThreadWithAncestors());
+  });
 }
 
-std::vector<StackFrame> DebugBridge::refetchStackFrames() {
+std::vector<StackFrame> DebugBridge::updateStackFrames(lua_State* L) {
   std::vector<StackFrame> frames;
   lua_Debug ar;
-  lua_State* L = break_vm_;
-  vm_stack_.clear();
   int depth = 0;
   while (L != nullptr) {
     for (int level = 0; lua_getinfo(L, level, "sln", &ar); ++level) {
@@ -580,7 +597,7 @@ std::vector<StackFrame> DebugBridge::refetchStackFrames() {
         frame.source->path = file_mapping_.normalize(ar.source);
       frame.line = ar.currentline;
       frames.emplace_back(std::move(frame));
-      vm_stack_.push_back(L);
+      stack_frames_.emplace_back(StackFrameInfo{L, depth});
     }
     L = vm_registry_.getParent(L);
   }
@@ -592,6 +609,7 @@ void DebugBridge::mainThreadWait(lua_State* L,
                                  std::unique_lock<std::mutex>& lock) {
   break_vm_ = L;
   resume_ = false;
+  variable_registry_.update(vm_registry_.getThreadWithAncestors());
   while (!resume_) {
     resume_cv_.wait(lock, [this] { return resume_ || main_fn_ != nullptr; });
 
@@ -602,6 +620,8 @@ void DebugBridge::mainThreadWait(lua_State* L,
       resume_cv_.notify_one();
     }
   }
+  variable_registry_.clear();
+  stack_frames_.clear();
   break_vm_ = nullptr;
 }
 

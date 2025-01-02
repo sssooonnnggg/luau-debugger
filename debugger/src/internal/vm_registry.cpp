@@ -1,5 +1,10 @@
+#include <format>
+
+#include <lua.h>
+
+#include <internal/utils.h>
+
 #include "vm_registry.h"
-#include "lua.h"
 
 namespace luau::debugger {
 
@@ -59,11 +64,37 @@ std::vector<lua_State*> VMRegistry::getAncestors(lua_State* L) const {
   return ancestors;
 }
 
-std::vector<lua_State*> VMRegistry::getThreads() const {
-  std::vector<lua_State*> threads(alive_threads_.size());
-  for (auto [state, _] : alive_threads_)
-    threads.emplace_back(state);
+std::vector<std::vector<lua_State*>> VMRegistry::getThreadWithAncestors()
+    const {
+  std::vector<std::vector<lua_State*>> threads;
+  for (auto [state, parent] : alive_threads_)
+    threads.push_back(getAncestors(state));
   return threads;
+}
+
+std::vector<ThreadInfo> VMRegistry::getThreads() const {
+  std::vector<ThreadInfo> threads;
+  for (auto [state, parent] : alive_threads_)
+    threads.emplace_back(ThreadInfo{getThreadKey(state), state, parent,
+                                    getThreadName(state, parent)});
+
+  return threads;
+}
+
+int VMRegistry::getThreadKey(lua_State* L) {
+  return dap_utils::clamp(std::hash<lua_State*>{}(L));
+}
+
+std::string VMRegistry::getThreadName(lua_State* L, lua_State* parent) {
+  return std::format("Thread ({})", static_cast<void*>(L));
+}
+
+lua_State* VMRegistry::getThread(int key) const {
+  for (auto [state, _] : alive_threads_) {
+    if (getThreadKey(state) == key)
+      return state;
+  }
+  return nullptr;
 }
 
 }  // namespace luau::debugger
