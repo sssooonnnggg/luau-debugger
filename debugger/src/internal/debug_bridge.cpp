@@ -595,9 +595,10 @@ std::vector<StackFrame> DebugBridge::updateStackFrames(lua_State* L) {
       if (ar.source)
         frame.source->path = file_mapping_.normalize(ar.source);
       frame.line = ar.currentline;
-      frames.emplace_back(std::move(frame));
       frame.id = stack_frames_.size();
+      frames.emplace_back(std::move(frame));
       stack_frames_.emplace_back(StackFrameInfo{L, depth});
+      ++depth;
     }
     L = vm_registry_.getParent(L);
   }
