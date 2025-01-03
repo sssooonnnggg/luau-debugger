@@ -5,6 +5,7 @@
 #include <variant>
 
 #include <internal/utils/dap_utils.h>
+#include <internal/utils/lua_types.h>
 #include <internal/utils/lua_utils.h>
 
 namespace luau::debugger::utils {

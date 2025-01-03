@@ -60,6 +60,7 @@ local function test_variables()
 
       local table_with_getter = {}
       setmetatable(table_with_getter, {
+        __tostring = function() return "table_with_getter" end,
         __getters = {
           a = function()
             return 1

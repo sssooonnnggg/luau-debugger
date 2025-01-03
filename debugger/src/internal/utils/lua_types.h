@@ -17,16 +17,7 @@ concept Type = requires(T, lua_State* L, int index) {
 template <Type... T>
 struct TypeList;
 
-inline std::string formatPointer(lua_State* L, int index) {
-  lua_checkstack(L, 1);
-  const void* ptr = lua_topointer(L, index);
-  unsigned long long enc = lua_encodepointer(L, uintptr_t(ptr));
-  lua_pushfstring(L, "%s: 0x%016llx", luaL_typename(L, index), enc);
-  const char* data = lua_tolstring(L, -1, nullptr);
-  auto result = std::format("{}", data);
-  lua_pop(L, 1);
-  return result;
-}
+std::string formatComplexData(lua_State* L, int index);
 
 class Nil {
  public:
@@ -83,7 +74,7 @@ class LightUserData {
   static constexpr lua_Type type = LUA_TLIGHTUSERDATA;
   static std::string typeName() { return lua_typename(nullptr, type); }
   static std::string toString(lua_State* L, int index) {
-    return formatPointer(L, index);
+    return formatComplexData(L, index);
   }
 };
 
@@ -92,7 +83,7 @@ class Table {
   static constexpr lua_Type type = LUA_TTABLE;
   static std::string typeName() { return lua_typename(nullptr, type); }
   static std::string toString(lua_State* L, int index) {
-    return formatPointer(L, index);
+    return formatComplexData(L, index);
   }
 };
 
@@ -101,7 +92,7 @@ class Function {
   static constexpr lua_Type type = LUA_TFUNCTION;
   static std::string typeName() { return lua_typename(nullptr, type); }
   static std::string toString(lua_State* L, int index) {
-    return formatPointer(L, index);
+    return formatComplexData(L, index);
   }
 };
 
@@ -110,7 +101,7 @@ class UserData {
   static constexpr lua_Type type = LUA_TUSERDATA;
   static std::string typeName() { return lua_typename(nullptr, type); }
   static std::string toString(lua_State* L, int index) {
-    return formatPointer(L, index);
+    return formatComplexData(L, index);
   }
 };
 
@@ -119,7 +110,7 @@ class Thread {
   static constexpr lua_Type type = LUA_TTHREAD;
   static std::string typeName() { return lua_typename(nullptr, type); }
   static std::string toString(lua_State* L, int index) {
-    return formatPointer(L, index);
+    return formatComplexData(L, index);
   }
 };
 

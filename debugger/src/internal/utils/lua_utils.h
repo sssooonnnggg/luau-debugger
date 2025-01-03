@@ -36,6 +36,8 @@ bool replaceOrCreateFunction(lua_State* L,
                              const std::string& name,
                              lua_CFunction func);
 
+int callMetaProtected(lua_State* L, int obj, const char* event);
+
 class StackGuard {
  public:
   StackGuard(lua_State* L, int capacity = 5) : L_(L), top_(lua_gettop(L)) {

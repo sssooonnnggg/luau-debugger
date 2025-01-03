@@ -1,11 +1,27 @@
 #include <lua.h>
-#include <unordered_map>
 
-#include <internal/utils/lua_types.h>
+#include <internal/utils/lua_utils.h>
 
 #include "lua_types.h"
 
 namespace luau::debugger::lua_utils::type {
+
+std::string formatComplexData(lua_State* L, int index) {
+  lua_checkstack(L, 1);
+  const void* ptr = lua_topointer(L, index);
+  unsigned long long enc = lua_encodepointer(L, uintptr_t(ptr));
+  lua_pushfstring(L, "%s: 0x%016llx", luaL_typename(L, index), enc);
+  const char* data = lua_tolstring(L, -1, nullptr);
+  auto result = std::format("{}", data);
+  lua_pop(L, 1);
+  if (lua_utils::callMetaProtected(L, index, "__tostring")) {
+    const char* s = lua_tolstring(L, -1, nullptr);
+    if (s != nullptr)
+      result = std::format("{} {}", result, s);
+    lua_pop(L, 1);
+  }
+  return result;
+}
 
 using ToString = std::string (*)(lua_State*, int);
 using GetTypeName = std::string (*)();

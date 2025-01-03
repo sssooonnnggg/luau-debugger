@@ -198,4 +198,19 @@ bool replaceOrCreateFunction(lua_State* L,
   }
   return result;
 }
+
+int callMetaProtected(lua_State* L, int obj, const char* event) {
+  obj = lua_absindex(L, obj);
+  lua_checkstack(L, 1);
+  if (!luaL_getmetafield(L, obj, event))
+    return 0;
+  lua_pushvalue(L, obj);
+  if (LUA_OK != lua_pcall(L, 1, 1, 0)) {
+    lua_pop(L, 1);
+    return 0;
+  }
+
+  return 1;
+}
+
 }  // namespace luau::debugger::lua_utils
