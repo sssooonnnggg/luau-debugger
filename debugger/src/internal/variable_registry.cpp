@@ -109,6 +109,10 @@ void VariableRegistry::fetchGlobals(lua_State* L) {
     globals.emplace_back(createVariable(L, name, -1));
     lua_pop(L, 1);
   }
+
+  if (lua_getmetatable(L, -1))
+    globals.emplace_back(createVariable(L, "__metatable", -1));
+
   registerOrUpdateVariables(getGlobalScope(), std::move(globals));
 }
 

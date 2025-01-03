@@ -3,11 +3,12 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
-#include "utils/dap_utils.h"
 
 #include <lapi.h>
 #include <lstate.h>
 #include <lua.h>
+
+#include <internal/utils/dap_utils.h>
 
 namespace luau::debugger {
 
