@@ -537,8 +537,7 @@ dap::array<dap::Thread> DebugBridge::getThreads() {
   dap::array<dap::Thread> threads;
   for (const auto& thread : vm_registry_.getThreads()) {
     // TODO: process more threads
-    if (thread.parent_ != nullptr && thread.L_ != break_vm_ ||
-        getStackDepth(thread.L_) == 0)
+    if (thread.L_ != break_vm_)
       continue;
     threads.emplace_back(dap::Thread{.id = thread.key_, .name = thread.name_});
   }
@@ -585,6 +584,7 @@ std::vector<StackFrame> DebugBridge::updateStackFrames(lua_State* L) {
   std::vector<StackFrame> frames;
   lua_Debug ar;
   int depth = 0;
+  lua_State* src = L;
   while (L != nullptr) {
     for (int level = 0; lua_getinfo(L, level, "sln", &ar); ++level) {
       if (ar.what[0] == 'C')
@@ -597,7 +597,7 @@ std::vector<StackFrame> DebugBridge::updateStackFrames(lua_State* L) {
       frame.line = ar.currentline;
       frame.id = stack_frames_.size();
       frames.emplace_back(std::move(frame));
-      stack_frames_.emplace_back(StackFrameInfo{L, depth});
+      stack_frames_.emplace_back(StackFrameInfo{src, depth});
       ++depth;
     }
     L = vm_registry_.getParent(L);

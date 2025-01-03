@@ -142,7 +142,7 @@ void VariableRegistry::fetchFromStack(lua_State* L, int level, lua_State* src) {
     variables.emplace_back(createVariable(L, name, level));
     lua_pop(L, 1);
   }
-  registerOrUpdateVariables(getLocalScope(L, depth_), std::move(variables));
+  registerOrUpdateVariables(getLocalScope(src, depth_), std::move(variables));
 
   // Register upvalues
   lua_Debug ar = {};
@@ -154,7 +154,7 @@ void VariableRegistry::fetchFromStack(lua_State* L, int level, lua_State* src) {
     lua_pop(L, 1);
   }
   lua_pop(L, 1);
-  registerOrUpdateVariables(getUpvalueScope(L, depth_), std::move(upvalues));
+  registerOrUpdateVariables(getUpvalueScope(src, depth_), std::move(upvalues));
 }
 
 }  // namespace luau::debugger
