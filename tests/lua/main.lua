@@ -70,6 +70,11 @@ local function test_variables()
         }
       })
 
+      local multi_line_string = [[
+        hello
+        world
+      ]]
+
       local bar_function = function() end
       foo_string = "ghi"
       print("Hello, World!")
