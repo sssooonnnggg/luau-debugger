@@ -72,7 +72,7 @@ void DebugBridge::onDebugBreak(lua_State* L,
   std::unique_lock<std::mutex> lock(break_mutex_);
 
   dap::StoppedEvent event{.reason = stopReasonToString(reason)};
-  event.threadId = vm_registry_.getThreadKey(L);
+  event.threadId = 1;
   if (reason == BreakReason::Entry) {
     if (session_ == nullptr) {
       DEBUGGER_LOG_INFO(
@@ -111,7 +111,7 @@ StackTraceResponse DebugBridge::getStackTrace(std::int64_t threadId) {
   if (!isDebugBreak())
     return StackTraceResponse{};
 
-  lua_State* L = vm_registry_.getThread(static_cast<int>(threadId));
+  lua_State* L = threadId == 1 ? break_vm_ : vm_registry_.getThread(static_cast<int>(threadId));
 
   StackTraceResponse response;
   lua_utils::DisableDebugStep _(break_vm_);
@@ -534,14 +534,7 @@ void DebugBridge::writeDebugConsole(std::string_view output,
 }
 
 dap::array<dap::Thread> DebugBridge::getThreads() {
-  dap::array<dap::Thread> threads;
-  for (const auto& thread : vm_registry_.getThreads()) {
-    // TODO: process more threads
-    if (thread.L_ != break_vm_)
-      continue;
-    threads.emplace_back(dap::Thread{.id = thread.key_, .name = thread.name_});
-  }
-
+  dap::array<dap::Thread> threads{dap::Thread{.id = 1, .name = "Main Thread"}};
   return threads;
 }
 

@@ -17,7 +17,7 @@ std::string formatComplexData(lua_State* L, int index) {
   if (lua_utils::callMetaProtected(L, index, "__tostring")) {
     const char* s = lua_tolstring(L, -1, nullptr);
     if (s != nullptr)
-      result = std::format("{} {}", result, s);
+      result = std::format("{} ({})", result, s);
     lua_pop(L, 1);
   }
   return result;
