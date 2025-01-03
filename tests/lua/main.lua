@@ -197,6 +197,21 @@ local function test_table_with_number_and_string_keys()
   print(table_with_number_idx)
 end
 
+local function test_metatable()
+  local mt = {
+    __index = {
+      a = 1,
+      b = 2,
+    }
+  }
+  local t = {
+    c = 3
+  }
+  setmetatable(t, mt)
+  print(t.a)
+  print(t.b)
+end
+
 local function main()
   test_variables()
   test_step()
@@ -208,6 +223,7 @@ local function main()
   test_self()
   test_break_from_code()
   test_table_with_number_and_string_keys()
+  test_metatable()
   print('=============================================')
 end
 

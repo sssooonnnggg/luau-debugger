@@ -166,6 +166,10 @@ void Variable::addRawFields(luau::debugger::VariableRegistry* registry,
     variables->emplace_back(addField(L, registry, scope));
     lua_pop(L, 1);
   }
+
+  lua_pushliteral(L, "__metatable");
+  if (lua_getmetatable(L, value_idx))
+    variables->emplace_back(addField(L, registry, scope));
 }
 
 void Variable::addIterFields(luau::debugger::VariableRegistry* registry,
