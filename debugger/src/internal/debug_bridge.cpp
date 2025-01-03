@@ -72,7 +72,7 @@ void DebugBridge::onDebugBreak(lua_State* L,
   std::unique_lock<std::mutex> lock(break_mutex_);
 
   dap::StoppedEvent event{.reason = stopReasonToString(reason)};
-  event.allThreadsStopped = true;
+  event.threadId = vm_registry_.getThreadKey(L);
   if (reason == BreakReason::Entry) {
     if (session_ == nullptr) {
       DEBUGGER_LOG_INFO(
@@ -576,7 +576,7 @@ BreakPoint* DebugBridge::findBreakPoint(lua_State* L) {
 
 void DebugBridge::updateVariables() {
   executeInMainThread([&] {
-    variable_registry_.update(vm_registry_.getThreadWithAncestors());
+    variable_registry_.update({vm_registry_.getAncestors(break_vm_)});
   });
 }
 
@@ -610,7 +610,7 @@ void DebugBridge::mainThreadWait(lua_State* L,
                                  std::unique_lock<std::mutex>& lock) {
   break_vm_ = L;
   resume_ = false;
-  variable_registry_.update(vm_registry_.getThreadWithAncestors());
+  variable_registry_.update({vm_registry_.getAncestors(break_vm_)});
   while (!resume_) {
     resume_cv_.wait(lock, [this] { return resume_ || main_fn_ != nullptr; });
 
