@@ -75,6 +75,9 @@ void VariableRegistry::update(
   if (vm_with_ancestors.empty())
     return;
 
+  auto* first_state = vm_with_ancestors[0][0];
+  lua_utils::DisableDebugStep _(first_state);
+
   for (const auto& chain : vm_with_ancestors) {
     depth_ = 0;
     lua_State* src = chain[0];
@@ -82,7 +85,7 @@ void VariableRegistry::update(
       fetch(L, src);
   }
 
-  fetchGlobals(vm_with_ancestors[0][0]);
+  fetchGlobals(first_state);
   clearDirtyScopes();
 }
 

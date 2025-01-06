@@ -26,7 +26,6 @@
 #include <internal/vm_registry.h>
 
 #include "debugger.h"
-#include "internal/utils/dap_utils.h"
 
 namespace luau::debugger {
 
@@ -111,7 +110,9 @@ StackTraceResponse DebugBridge::getStackTrace(std::int64_t threadId) {
   if (!isDebugBreak())
     return StackTraceResponse{};
 
-  lua_State* L = threadId == 1 ? break_vm_ : vm_registry_.getThread(static_cast<int>(threadId));
+  lua_State* L = threadId == 1
+                     ? break_vm_
+                     : vm_registry_.getThread(static_cast<int>(threadId));
 
   StackTraceResponse response;
   lua_utils::DisableDebugStep _(break_vm_);
