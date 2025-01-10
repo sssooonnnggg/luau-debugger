@@ -7,6 +7,7 @@
 namespace luau::debugger::lua_utils::type {
 
 std::string formatComplexData(lua_State* L, int index) {
+  DisableDebugStep _(L);
   lua_checkstack(L, 1);
   const void* ptr = lua_topointer(L, index);
   unsigned long long enc = lua_encodepointer(L, uintptr_t(ptr));
