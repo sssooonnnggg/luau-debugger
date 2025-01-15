@@ -211,7 +211,8 @@ ResponseOrError<SetVariableResponse> DebugBridge::setVariable(
 }
 
 void DebugBridge::resume() {
-  DEBUGGER_ASSERT(isDebugBreak());
+  if (!isDebugBreak())
+    return;
 
   // Disable single step
   processSingleStep(nullptr);
