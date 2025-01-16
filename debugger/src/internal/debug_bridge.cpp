@@ -444,6 +444,8 @@ ResponseOrError<EvaluateResponse> DebugBridge::evaluate(
       response = evaluateRepl(request);
     else if (context == "watch")
       response = evaluateWatch(request);
+    else if (context == "hover")
+      response = evaluateHover(request);
     else {
       DEBUGGER_LOG_ERROR("[evaluate] Invalid evaluate context: {}", context);
       response = Error{"Invalid evaluate context"};
