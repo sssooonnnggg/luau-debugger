@@ -19,9 +19,9 @@
       "request": "attach",
       "name": "attach with source map",
       "address": "localhost",
-      "port": 58000,
+      "port": 59000,
       "sourceMap": {
-        "E:/test": "${workspaceFolder}"
+        "E:/test\\lua": "${workspaceFolder}"
       }
     },
     {
