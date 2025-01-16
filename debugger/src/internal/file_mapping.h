@@ -21,6 +21,9 @@ class FileMapping {
       return std::string{};
     std::string prefix_removed =
         std::string((path[0] == '@' || path[0] == '=') ? path.substr(1) : path);
+#if !defined (_WIN32)
+    std::replace(prefix_removed.begin(), prefix_removed.end(), '\\', '/');
+#endif
     if (std::filesystem::path(prefix_removed).is_relative())
       prefix_removed = lua_root_ + "/" + prefix_removed;
     std::string with_extension = std::filesystem::path(prefix_removed)
