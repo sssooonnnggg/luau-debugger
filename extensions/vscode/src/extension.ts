@@ -19,6 +19,14 @@ let output: vscode.OutputChannel;
 let source_map = new Map<string, string>();
 let reverse_source_map = new Map<string, string>();
 
+function pathNormalize(input: string): string {
+  const normalize = path.normalize(input);
+  if (UNIX)
+    return normalize.replace(/\\/g, '/');
+  else
+    return normalize;
+}
+
 export function activate(context: vscode.ExtensionContext) {
   const provider = new LuauConfigurationProvider();
   output = vscode.window.createOutputChannel('luau-debugger');
@@ -131,8 +139,8 @@ class LuauConfigurationProvider implements vscode.DebugConfigurationProvider {
     if (input != undefined && typeof input == 'object') {
       for (let key in input) {
         let value = input[key];
-        key = path.normalize(key);
-        value = path.normalize(value);
+        key = pathNormalize(key);
+        value = pathNormalize(value);
         source_map.set(key, value);
         reverse_source_map.set(value, key);
       }
@@ -187,7 +195,7 @@ class LuauDebugAdapterTrackerFactory implements vscode.DebugAdapterTrackerFactor
 
     if (source && source.path) {
       let input_path = source.path;
-      input_path = path.normalize(input_path);
+      input_path = pathNormalize(input_path);
       for (let [path, mapped] of source_map) {
         for (let p of [path[0].toLowerCase() + path.slice(1), path[0].toUpperCase() + path.slice(1)]) {
           if (input_path.startsWith(p)) {
