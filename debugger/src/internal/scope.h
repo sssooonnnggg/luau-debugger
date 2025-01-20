@@ -64,7 +64,7 @@ class Scope final {
   static Scope createTable(lua_State* L, int index = -1) {
     const TValue* t = luaA_toobject(L, index);
     auto* address = hvalue(t);
-    auto scope = createFromAddress<Table>(L, index, address);
+    auto scope = createFromAddress(L, index, address);
     scope.type_ = ScopeType::Table;
     return scope;
   }
@@ -72,7 +72,7 @@ class Scope final {
   static Scope createUserData(lua_State* L, int index = -1) {
     const TValue* u = luaA_toobject(L, index);
     auto* address = uvalue(u);
-    auto scope = createFromAddress<Udata>(L, index, address);
+    auto scope = createFromAddress(L, index, address);
     scope.type_ = ScopeType::UserData;
     return scope;
   }
