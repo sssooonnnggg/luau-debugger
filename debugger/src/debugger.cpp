@@ -48,6 +48,10 @@ void Debugger::setRoot(std::string_view root) {
   debug_bridge_->fileMapping().setRootDirectory(root);
 }
 
+void Debugger::setFileExtension(std::string_view extension) {
+  debug_bridge_->fileMapping().setFileExtension(extension);
+}
+
 bool Debugger::listen(int port) {
   using namespace dap::net;
   server_ = dap::net::Server::create();
