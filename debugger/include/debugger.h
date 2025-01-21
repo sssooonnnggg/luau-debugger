@@ -54,6 +54,10 @@ class Debugger {
   ~Debugger();
 
   void initialize(lua_State* L);
+
+  // NOTE: this function should be called before `lua_close`
+  void release(lua_State* L);
+
   void setRoot(std::string_view root);
 
   bool listen(int port);

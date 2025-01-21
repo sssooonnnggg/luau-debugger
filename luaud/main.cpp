@@ -50,6 +50,11 @@ int main(int argc, const char** argv) {
   runtime.installDebugger(&debugger);
   int result = runtime.runFile(argv[2]);
 
+#if defined(RELOAD_LUA_FILES_TEST)
+  runtime.reset();
+  result = runtime.runFile(argv[2]);
+#endif
+
 #if defined(MULTIPLY_VM_TEST)
   luau::Runtime runtime2;
   runtime2.setErrorHandler(error_handler);

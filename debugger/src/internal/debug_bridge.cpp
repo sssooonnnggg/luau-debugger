@@ -53,6 +53,13 @@ void DebugBridge::initialize(lua_State* L) {
   lua_singlestep(L, true);
 }
 
+void DebugBridge::release(lua_State* L) {
+  vm_registry_.releaseVM(L);
+  variable_registry_.clear();
+  for (auto& [_, file] : files_)
+    file.removeRef(L);
+}
+
 void DebugBridge::initializeCallbacks(lua_State* L) {
   lua_Callbacks* cb = lua_callbacks(L);
   cb->debugbreak = LuaStatics::debugbreak;

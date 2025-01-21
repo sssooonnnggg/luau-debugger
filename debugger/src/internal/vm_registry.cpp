@@ -18,6 +18,17 @@ void VMRegistry::registerVM(lua_State* L) {
   markAlive(L, nullptr);
 }
 
+void VMRegistry::releaseVM(lua_State* L) {
+  lua_vms_.erase(std::remove(lua_vms_.begin(), lua_vms_.end(), L),
+                 lua_vms_.end());
+  for (auto it = alive_threads_.begin(); it != alive_threads_.end();) {
+    if (lua_mainthread(it->first) == L)
+      it = alive_threads_.erase(it);
+    else
+      ++it;
+  }
+}
+
 bool VMRegistry::isAlive(lua_State* L) const {
   return alive_threads_.find(L) != alive_threads_.end();
 }

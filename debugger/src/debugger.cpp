@@ -39,6 +39,11 @@ void Debugger::initialize(lua_State* L) {
   debug_bridge_->initialize(L);
 }
 
+void Debugger::release(lua_State* L) {
+  lua_setthreaddata(L, nullptr);
+  debug_bridge_->release(L);
+}
+
 void Debugger::setRoot(std::string_view root) {
   debug_bridge_->fileMapping().setRootDirectory(root);
 }

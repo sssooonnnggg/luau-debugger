@@ -17,6 +17,7 @@ class Runtime {
 
   void installDebugger(debugger::Debugger* debugger);
   void installLibrary();
+  void reset();
   bool runFile(const char* name);
 
   void setErrorHandler(std::function<void(std::string_view)> handler);

@@ -18,6 +18,8 @@ class VMRegistry {
  public:
   ~VMRegistry();
   void registerVM(lua_State* L);
+  void releaseVM(lua_State* L);
+
   bool isAlive(lua_State* L) const;
   bool isChild(lua_State* L, lua_State* parent) const;
   lua_State* getParent(lua_State* L) const;

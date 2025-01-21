@@ -178,6 +178,17 @@ void Runtime::installDebugger(debugger::Debugger* debugger) {
   debugger->initialize(vm_);
 }
 
+void Runtime::reset() {
+  if (vm_ != nullptr) {
+    debugger_->release(vm_);
+  }
+
+  lua_close(vm_);
+  vm_ = luaL_newstate();
+  debugger_->initialize(vm_);
+  installLibrary();
+}
+
 void Runtime::installLibrary() {
   luaL_openlibs(vm_);
 

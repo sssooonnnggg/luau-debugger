@@ -48,6 +48,8 @@ class DebugBridge final {
   DebugBridge(bool stop_on_entry);
 
   void initialize(lua_State* L);
+  void release(lua_State* L);
+
   FileMapping& fileMapping() { return file_mapping_; }
   bool isDebugBreak();
 

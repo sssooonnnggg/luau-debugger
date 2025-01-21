@@ -97,6 +97,13 @@ void File::addRef(LuaFileRef ref) {
   refs_.emplace_back(std::move(ref));
 }
 
+void File::removeRef(lua_State* L) {
+  auto it = std::remove_if(
+      refs_.begin(), refs_.end(),
+      [L](const LuaFileRef& ref) { return lua_mainthread(ref.L_) == L; });
+  refs_.erase(it, refs_.end());
+}
+
 void File::enableBreakPoint(BreakPoint& bp, bool enable) {
   for (auto& ref : refs_)
     int target = bp.enable(ref.L_, ref.file_ref_, enable);

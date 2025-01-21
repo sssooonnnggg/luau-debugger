@@ -36,6 +36,7 @@ class File {
 
   void setBreakPoints(const std::unordered_map<int, BreakPoint>& breakpoints);
   void addRef(LuaFileRef ref);
+  void removeRef(lua_State* L);
 
   void addBreakPoint(const BreakPoint& bp);
   void addBreakPoint(int line);
