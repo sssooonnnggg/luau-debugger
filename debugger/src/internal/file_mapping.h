@@ -10,6 +10,9 @@ class FileMapping {
   void setRootDirectory(std::string_view root) {
     lua_root_ = std::string(root);
   }
+  void setFileExtension(std::string_view extension) {
+    lua_file_extension_ = std::string(extension);
+  }
   void setEntryPath(std::string entry) { entry_path_ = std::move(entry); }
   std::string entryPath() const { return entry_path_; }
   bool isEntryPath(std::string_view path) const {
@@ -27,13 +30,14 @@ class FileMapping {
     if (std::filesystem::path(prefix_removed).is_relative())
       prefix_removed = lua_root_ + "/" + prefix_removed;
     std::string with_extension = std::filesystem::path(prefix_removed)
-                                     .replace_extension(".lua")
+                                     .replace_extension(lua_file_extension_)
                                      .string();
     return std::filesystem::weakly_canonical(with_extension).string();
   }
 
  public:
   std::string lua_root_;
+  std::string lua_file_extension_ = ".lua";
   std::string entry_path_;
 };
 
