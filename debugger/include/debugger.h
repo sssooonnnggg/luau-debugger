@@ -54,6 +54,7 @@ class Debugger {
   ~Debugger();
 
   void initialize(lua_State* L);
+  void setFileExtension(std::string_view extension);
 
   // NOTE: this function should be called before `lua_close`
   void release(lua_State* L);
