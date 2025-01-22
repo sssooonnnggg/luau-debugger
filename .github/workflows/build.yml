@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+
+      matrix:
+        os: [{name: ubuntu, version: ubuntu-24.04}, {name: windows, version: windows-latest}]
+
+    runs-on: ${{matrix.os.version}}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+      - name: Checkout cppdap
+        uses: actions/checkout@v4
+        with:
+          repository: google/cppdap
+          path: cppdap
+      - name: init cppdap submodules
+        working-directory: ./cppdap
+        run: git submodule update --init
+      - name: Checkout luau
+        uses: actions/checkout@v4
+        with:
+          repository: luau-lang/luau
+          path: luau
+      - name: install compiler for windows
+        if: matrix.os.name == 'windows'
+        run: |
+          choco install ninja
+          choco install llvm
+      - name: configure for windows
+        if: matrix.os.name == 'windows'
+        run: cmake -DCPP_DAP_ROOT=${{ github.workspace }}/cppdap -DLUAU_ROOT=${{ github.workspace }}/luau . --preset windows-publish-configure
+      - name: build for windows
+        if: matrix.os.name == 'windows'
+        run: cmake --build --preset windows-publish-build
+      - name: configure for ubuntu
+        if: matrix.os.name == 'ubuntu'
+        run: cmake -DCPP_DAP_ROOT=${{ github.workspace }}/cppdap -DLUAU_ROOT=${{ github.workspace }}/luau . --preset linux-clang-release
+      - name: build for ubuntu
+        if: matrix.os.name == 'ubuntu'
+        run: cmake --build --preset linux-clang-release-build
