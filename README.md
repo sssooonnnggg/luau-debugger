@@ -1,4 +1,5 @@
 # Luau debugger
+![Build status](https://github.com/sssooonnnggg/luau-debugger/actions/workflows/build.yml/badge.svg?branch=master)
 
 A debugger for Luau with debug adapter protocol(DAP) support.
 
