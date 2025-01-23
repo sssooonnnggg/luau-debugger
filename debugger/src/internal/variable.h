@@ -7,6 +7,7 @@
 #include <internal/scope.h>
 
 namespace luau::debugger {
+
 class VariableRegistry;
 class Variable {
  public:
@@ -20,8 +21,7 @@ class Variable {
 
   std::string setValue(Scope scope, const std::string& value);
 
-  static void loadFields(luau::debugger::VariableRegistry* registry,
-                         const Scope& scope);
+  static void loadFields(VariableRegistry* registry, const Scope& scope);
 
  private:
   friend class VariableRegistry;
@@ -29,17 +29,17 @@ class Variable {
            lua_State* L,
            std::string_view name,
            int level);
-  void addScope(luau::debugger::VariableRegistry* registry, lua_State* L);
+  void addScope(VariableRegistry* registry, lua_State* L);
 
-  static void addRawFields(luau::debugger::VariableRegistry* registry,
+  static void addRawFields(VariableRegistry* registry,
                            lua_State* L,
                            const Scope& scope,
                            int value_idx);
-  static void addIterFields(luau::debugger::VariableRegistry* registry,
+  static void addIterFields(VariableRegistry* registry,
                             lua_State* L,
                             const Scope& scope,
                             int value_idx);
-  static void addCustomFields(luau::debugger::VariableRegistry* registry,
+  static void addCustomFields(VariableRegistry* registry,
                               lua_State* L,
                               const Scope& scope,
                               int value_idx);

@@ -116,8 +116,7 @@ std::string Variable::preprocess(const std::string& input_value) {
   return input_value;
 }
 
-void Variable::addScope(luau::debugger::VariableRegistry* registry,
-                        lua_State* L) {
+void Variable::addScope(VariableRegistry* registry, lua_State* L) {
   if (!hasFields())
     return;
 
@@ -133,8 +132,7 @@ void Variable::addScope(luau::debugger::VariableRegistry* registry,
     registry->registerVariables(scope_, {});
 }
 
-void Variable::loadFields(luau::debugger::VariableRegistry* registry,
-                          const Scope& scope) {
+void Variable::loadFields(VariableRegistry* registry, const Scope& scope) {
   auto* L = scope.getLuaState();
   lua_utils::StackGuard guard(L);
   if (!scope.pushRef())
@@ -151,7 +149,7 @@ void Variable::loadFields(luau::debugger::VariableRegistry* registry,
     addRawFields(registry, L, scope, value_idx);
 }
 
-void Variable::addRawFields(luau::debugger::VariableRegistry* registry,
+void Variable::addRawFields(VariableRegistry* registry,
                             lua_State* L,
                             const Scope& scope,
                             int value_idx) {
@@ -172,7 +170,7 @@ void Variable::addRawFields(luau::debugger::VariableRegistry* registry,
     variables->emplace_back(addField(L, registry, scope));
 }
 
-void Variable::addIterFields(luau::debugger::VariableRegistry* registry,
+void Variable::addIterFields(VariableRegistry* registry,
                              lua_State* L,
                              const Scope& scope,
                              int value_idx) {
@@ -221,7 +219,7 @@ void Variable::addIterFields(luau::debugger::VariableRegistry* registry,
   }
 }
 
-void Variable::addCustomFields(luau::debugger::VariableRegistry* registry,
+void Variable::addCustomFields(VariableRegistry* registry,
                                lua_State* L,
                                const Scope& scope,
                                int value_idx) {
