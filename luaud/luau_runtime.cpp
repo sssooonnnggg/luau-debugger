@@ -185,8 +185,8 @@ void Runtime::reset() {
 
   lua_close(vm_);
   vm_ = luaL_newstate();
-  debugger_->initialize(vm_);
   installLibrary();
+  debugger_->initialize(vm_);
 }
 
 void Runtime::installLibrary() {
