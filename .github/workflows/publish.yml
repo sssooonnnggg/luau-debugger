@@ -23,8 +23,9 @@ jobs:
       - name: Checkout cppdap
         uses: actions/checkout@v4
         with:
-          repository: google/cppdap
+          repository: sssooonnnggg/cppdap
           path: cppdap
+          ref: fix-json-dump
       - name: init cppdap submodules
         working-directory: ./cppdap
         run: git submodule update --init

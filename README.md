@@ -26,7 +26,7 @@ See [extensions/vscode/README](./extensions/vscode/README.md)
 ## Dependencies
 
 - [luau](https://github.com/luau-lang/luau)
-- [cppdap](https://github.com/google/cppdap)
+- [cppdap](https://github.com/sssooonnnggg/cppdap)
 
 ## Build
 - Clone `cppdap` to local
