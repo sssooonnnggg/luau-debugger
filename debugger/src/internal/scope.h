@@ -45,7 +45,7 @@ class Scope final {
     newRef(other.ref_);
   }
   ~Scope() {
-    if (type_ == ScopeType::Table && ref_ != LUA_REFNIL && L_ != nullptr)
+    if (ref_ != LUA_REFNIL && L_ != nullptr)
       lua_unref(L_, ref_);
   }
 
