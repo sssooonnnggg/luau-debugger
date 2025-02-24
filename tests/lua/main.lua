@@ -148,6 +148,10 @@ local function test_error()
   -- abc.def()
 end
 
+local function test_assert()
+  assert(nil, "this is a nil assert")
+end
+
 local function test_print()
   local number = 3.1415
   local string = "hello world"
@@ -219,6 +223,7 @@ local function main()
   test_math()
   test_print()
   test_error()
+  test_assert()
   test_condition()
   test_self()
   test_break_from_code()

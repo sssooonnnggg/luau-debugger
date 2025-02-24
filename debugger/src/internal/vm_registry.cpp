@@ -34,10 +34,8 @@ bool VMRegistry::isAlive(lua_State* L) const {
 }
 
 lua_State* VMRegistry::getParent(lua_State* L) const {
-  auto it = alive_threads_.find(L);
-  if (it == alive_threads_.end())
-    return nullptr;
-  return it->second;
+  // FIXME: fix with its real parent
+  return nullptr;
 }
 
 lua_State* VMRegistry::getRoot(lua_State* L) const {
