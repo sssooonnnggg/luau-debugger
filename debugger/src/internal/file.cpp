@@ -12,7 +12,7 @@ namespace luau::debugger {
 
 LuaFileRef::LuaFileRef(lua_State* L) {
   L_ = L;
-  func_ = lua_utils::getFunction(L, -1);
+  func_ = lua_utils::getLuaFunction(L, -1);
   lua_checkstack(L, 1);
 
   // Save the lua_State associated with file
@@ -64,7 +64,7 @@ void LuaFileRef::copyFrom(const LuaFileRef& other) {
   // Copy the function reference
   lua_getref(L_, other.file_ref_);
   file_ref_ = lua_ref(L_, -1);
-  func_ = lua_utils::getFunction(L_, -1);
+  func_ = lua_utils::getLuaFunction(L_, -1);
   lua_pop(L_, 1);
 }
 

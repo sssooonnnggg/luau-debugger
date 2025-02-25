@@ -26,6 +26,8 @@
 #include <internal/vm_registry.h>
 
 #include "debugger.h"
+#include "internal/utils/lua_utils.h"
+#include "luaconf.h"
 
 namespace luau::debugger {
 
@@ -48,7 +50,11 @@ void DebugBridge::initialize(lua_State* L) {
 
   lua_utils::replaceOrCreateFunction(L, "print", LuaStatics::print);
   lua_utils::replaceOrCreateFunction(L, "debug", "break_here",
-                                     LuaStatics::break_here);
+                                     LuaStatics::breakHere);
+  lua_utils::replaceOrCreateFunction(L, "coroutine", "wrap",
+                                     LuaStatics::cowrap);
+  lua_utils::replaceOrCreateFunction(L, "coroutine", "resume",
+                                     LuaStatics::coresume);
 
   lua_singlestep(L, true);
 }

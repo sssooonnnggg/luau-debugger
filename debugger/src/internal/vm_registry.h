@@ -35,8 +35,13 @@ class VMRegistry {
   static std::string getThreadName(lua_State* L);
   lua_State* getThread(int key) const;
 
+  void pushStack(lua_State* L);
+  void popStack();
+
  private:
   std::vector<lua_State*> lua_vms_;
   std::unordered_set<lua_State*> alive_threads_;
+
+  std::vector<lua_State*> thread_stack_;
 };
 }  // namespace luau::debugger

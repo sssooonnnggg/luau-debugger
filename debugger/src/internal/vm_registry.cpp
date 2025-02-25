@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <format>
 
 #include <lua.h>
@@ -34,8 +35,10 @@ bool VMRegistry::isAlive(lua_State* L) const {
 }
 
 lua_State* VMRegistry::getParent(lua_State* L) const {
-  // FIXME: fix with its real parent
-  return nullptr;
+  auto it = std::find(thread_stack_.begin(), thread_stack_.end(), L);
+  if (it != thread_stack_.end())
+    return it == thread_stack_.begin() ? nullptr : *(it - 1);
+  return thread_stack_.empty() ? nullptr : thread_stack_.back();
 }
 
 lua_State* VMRegistry::getRoot(lua_State* L) const {
@@ -104,6 +107,14 @@ lua_State* VMRegistry::getThread(int key) const {
       return state;
   }
   return nullptr;
+}
+
+void VMRegistry::pushStack(lua_State* L) {
+  thread_stack_.push_back(L);
+}
+
+void VMRegistry::popStack() {
+  thread_stack_.pop_back();
 }
 
 }  // namespace luau::debugger

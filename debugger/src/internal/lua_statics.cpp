@@ -12,10 +12,32 @@
 #include <internal/log.h>
 #include <internal/utils.h>
 #include <internal/variable.h>
+#include "internal/utils/lua_utils.h"
 
 #include "lua_statics.h"
 
 namespace luau::debugger {
+
+namespace {
+class StackPusher {
+ public:
+  StackPusher(lua_State* L) : L_(L) {
+    auto bridge = DebugBridge::get(L_);
+    if (bridge == nullptr)
+      return;
+    bridge->vms().pushStack(L_);
+  }
+  ~StackPusher() {
+    auto bridge = DebugBridge::get(L_);
+    if (bridge == nullptr)
+      return;
+    bridge->vms().popStack();
+  }
+
+ private:
+  lua_State* L_;
+};
+}  // namespace
 
 void LuaStatics::debugbreak(lua_State* L, lua_Debug* ar) {
   auto bridge = DebugBridge::get(L);
@@ -88,13 +110,50 @@ int LuaStatics::print(lua_State* L) {
   return 0;
 }
 
-int LuaStatics::break_here(lua_State* L) {
+int LuaStatics::breakHere(lua_State* L) {
   auto bridge = DebugBridge::get(L);
   if (bridge == nullptr)
     return 0;
 
   bridge->onDebugBreak(L, nullptr, DebugBridge::BreakReason::Pause);
   return 0;
+}
+
+int LuaStatics::cowrap(lua_State* L) {
+  int top = lua_gettop(L);
+  lua_checkstack(L, 1 + top);
+  lua_pushvalue(L, lua_upvalueindex(1));
+  for (int i = 1; i <= top; ++i)
+    lua_pushvalue(L, i);
+  lua_call(L, top, 1);
+
+  if (auto* cl = lua_utils::getCFunction(L, -1)) {
+    auto* cont = cl->c.cont;
+    lua_checkstack(L, 1);
+    lua_pushcclosurek(
+        L,
+        [](lua_State* L) {
+          StackPusher _(L);
+          return forward(L, lua_upvalueindex(1));
+        },
+        nullptr, 1, cont);
+  }
+  return 1;
+}
+
+int LuaStatics::coresume(lua_State* L) {
+  StackPusher _(L);
+  return forward(L, lua_upvalueindex(1));
+}
+
+int LuaStatics::forward(lua_State* L, int index) {
+  int top = lua_gettop(L);
+  lua_checkstack(L, 1 + top);
+  lua_pushvalue(L, index);
+  for (int i = 1; i <= top; ++i)
+    lua_pushvalue(L, i);
+  lua_call(L, top, LUA_MULTRET);
+  return lua_gettop(L) - top;
 }
 
 };  // namespace luau::debugger

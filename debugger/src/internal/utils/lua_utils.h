@@ -23,7 +23,8 @@ bool setLocal(lua_State* L, int level, const std::string& name, int index);
 
 bool setUpvalue(lua_State* L, int level, const std::string& name, int index);
 
-Closure* getFunction(lua_State* L, int index);
+Closure* getLuaFunction(lua_State* L, int index);
+Closure* getCFunction(lua_State* L, int index);
 
 // Replace the function with the given name in the global table
 // If the function does not exist, create a new one and return false

@@ -156,9 +156,14 @@ bool setUpvalue(lua_State* L, int level, const std::string& name, int index) {
   return false;
 }
 
-Closure* getFunction(lua_State* L, int index) {
+Closure* getLuaFunction(lua_State* L, int index) {
   auto o = luaA_toobject(L, index);
   return isLfunction(o) ? clvalue(o) : nullptr;
+}
+
+Closure* getCFunction(lua_State* L, int index) {
+  auto o = luaA_toobject(L, index);
+  return iscfunction(o) ? clvalue(o) : nullptr;
 }
 
 bool replaceOrCreateFunction(lua_State* L,

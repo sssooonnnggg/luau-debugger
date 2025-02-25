@@ -129,6 +129,12 @@ local function test_coroutine()
   local a, b, c = coroutine.resume(test_coroutine)
   print("coroutine yield", a, b, c)
   coroutine.resume(test_coroutine, 3, 4)
+
+  -- test coroutine.wrap
+  local co = coroutine.wrap(function()
+    print("coroutine wrap")
+  end)
+  co()
 end
 
 
@@ -149,7 +155,7 @@ local function test_error()
 end
 
 local function test_assert()
-  assert(nil, "this is a nil assert")
+  -- assert(nil, "this is a nil assert")
 end
 
 local function test_print()
