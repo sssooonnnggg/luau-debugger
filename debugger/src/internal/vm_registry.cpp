@@ -22,7 +22,7 @@ void VMRegistry::releaseVM(lua_State* L) {
   lua_vms_.erase(std::remove(lua_vms_.begin(), lua_vms_.end(), L),
                  lua_vms_.end());
   for (auto it = alive_threads_.begin(); it != alive_threads_.end();) {
-    if (lua_mainthread(it->first) == L)
+    if (lua_mainthread(*it) == L)
       it = alive_threads_.erase(it);
     else
       ++it;
@@ -56,8 +56,8 @@ bool VMRegistry::isChild(lua_State* L, lua_State* parent) const {
   return false;
 }
 
-void VMRegistry::markAlive(lua_State* L, lua_State* parent) {
-  alive_threads_[L] = parent;
+void VMRegistry::markAlive(lua_State* L, lua_State* _) {
+  alive_threads_.insert(L);
 }
 
 void VMRegistry::markDead(lua_State* L) {
@@ -76,16 +76,16 @@ std::vector<lua_State*> VMRegistry::getAncestors(lua_State* L) const {
 std::vector<std::vector<lua_State*>> VMRegistry::getThreadWithAncestors()
     const {
   std::vector<std::vector<lua_State*>> threads;
-  for (auto [state, parent] : alive_threads_)
+  for (auto state : alive_threads_)
     threads.push_back(getAncestors(state));
   return threads;
 }
 
 std::vector<ThreadInfo> VMRegistry::getThreads() const {
   std::vector<ThreadInfo> threads;
-  for (auto [state, parent] : alive_threads_)
-    threads.emplace_back(ThreadInfo{getThreadKey(state), state, parent,
-                                    getThreadName(state, parent)});
+  for (auto state : alive_threads_)
+    threads.emplace_back(
+        ThreadInfo{getThreadKey(state), state, getThreadName(state)});
 
   return threads;
 }
@@ -94,12 +94,12 @@ int VMRegistry::getThreadKey(lua_State* L) {
   return dap_utils::clamp(std::hash<lua_State*>{}(L));
 }
 
-std::string VMRegistry::getThreadName(lua_State* L, lua_State* parent) {
+std::string VMRegistry::getThreadName(lua_State* L) {
   return std::format("Thread ({})", static_cast<void*>(L));
 }
 
 lua_State* VMRegistry::getThread(int key) const {
-  for (auto [state, _] : alive_threads_) {
+  for (auto state : alive_threads_) {
     if (getThreadKey(state) == key)
       return state;
   }

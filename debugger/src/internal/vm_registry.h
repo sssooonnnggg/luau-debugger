@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <lua.h>
@@ -11,9 +11,9 @@ namespace luau::debugger {
 struct ThreadInfo {
   int key_ = 0;
   lua_State* L_ = nullptr;
-  lua_State* parent_ = nullptr;
   std::string name_;
 };
+
 class VMRegistry {
  public:
   ~VMRegistry();
@@ -32,13 +32,11 @@ class VMRegistry {
 
   std::vector<ThreadInfo> getThreads() const;
   static int getThreadKey(lua_State* L);
-  static std::string getThreadName(lua_State* L, lua_State* parent);
+  static std::string getThreadName(lua_State* L);
   lua_State* getThread(int key) const;
 
  private:
   std::vector<lua_State*> lua_vms_;
-
-  // Record alive threads with its parent
-  std::unordered_map<lua_State*, lua_State*> alive_threads_;
+  std::unordered_set<lua_State*> alive_threads_;
 };
 }  // namespace luau::debugger
