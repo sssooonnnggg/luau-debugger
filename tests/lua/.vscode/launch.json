@@ -5,7 +5,14 @@
       "request": "launch",
       "name": "launch luau debugger",
       "program": "${workspaceFolder}/main.lua",
-      "port": 58000
+      "port": 59000
+    },
+    {
+      "type": "luau",
+      "request": "launch",
+      "name": "launch current file",
+      "program": "${file}",
+      "port": 59000
     },
     {
       "type": "luau",

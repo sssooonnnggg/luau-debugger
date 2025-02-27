@@ -30,7 +30,8 @@ function pathNormalize(input: string): string {
 export function activate(context: vscode.ExtensionContext) {
   const provider = new LuauConfigurationProvider();
   output = vscode.window.createOutputChannel('luau-debugger');
-  output.show();
+  // NOTE: this will cause ${file} substitution not working
+  // output.show();
   context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider(LUAU_DEBUG_TYPE, provider));
   context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory(LUAU_DEBUG_TYPE, new LuauDebugAdapterServerDescriptorFactory()));
   context.subscriptions.push(vscode.debug.registerDebugAdapterTrackerFactory(LUAU_DEBUG_TYPE, new LuauDebugAdapterTrackerFactory()));
