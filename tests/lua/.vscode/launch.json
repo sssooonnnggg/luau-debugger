@@ -19,7 +19,7 @@
       "request": "attach",
       "name": "attach to luau debugger",
       "address": "localhost",
-      "port": 58000
+      "port": 59000
     },
     {
       "type": "luau",

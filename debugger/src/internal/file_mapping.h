@@ -24,14 +24,16 @@ class FileMapping {
       return std::string{};
     std::string prefix_removed =
         std::string((path[0] == '@' || path[0] == '=') ? path.substr(1) : path);
-#if !defined (_WIN32)
+#if !defined(_WIN32)
     std::replace(prefix_removed.begin(), prefix_removed.end(), '\\', '/');
 #endif
     if (std::filesystem::path(prefix_removed).is_relative())
       prefix_removed = lua_root_ + "/" + prefix_removed;
-    std::string with_extension = std::filesystem::path(prefix_removed)
-                                     .replace_extension(lua_file_extension_)
-                                     .string();
+    std::filesystem::path full_path(prefix_removed);
+    std::string with_extension =
+        full_path.has_extension()
+            ? full_path.string()
+            : full_path.replace_extension(lua_file_extension_).string();
     return std::filesystem::weakly_canonical(with_extension).string();
   }
 
