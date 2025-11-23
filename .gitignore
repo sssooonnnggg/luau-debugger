@@ -6,5 +6,6 @@ build/**/*
 **/*.exe
 **/out/*.js
 **/out/*.js.map
+**/out/*.vsix
 **/*.zip
 **/debugger/**/*
