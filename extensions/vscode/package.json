@@ -1,7 +1,7 @@
 {
   "name": "luau-debugger",
   "displayName": "Luau Debugger Extension",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "publisher": "sssooonnnggg",
   "description": "Luau debugger",
   "author": {
@@ -92,7 +92,17 @@
                 "default": 58000
               },
               "sourceMap": {
-                "$ref": "#/contributes/debuggers/0/configurationAttributes/attach/properties/sourceMap"
+                "description": "Source path remapping between running device to local machine, for example {\"/sdcard/some/path/lua_root\": \"${workspaceFolder}/lua\"}",
+                "type": "object",
+                "patternProperties": {
+                  ".*": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "default": {}
               }
             }
           }
@@ -142,6 +152,7 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run fetch_debugger && npm run compile",
+    "package": "node scripts/package.js",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "fetch_debugger": "node scripts/fetch_debugger.js"
