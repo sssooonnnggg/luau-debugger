@@ -1,0 +1,2 @@
+/usr/bin/ar qc libLuau.Common.a CMakeFiles/Luau.Common.dir/Common/src/StringUtils.cpp.o CMakeFiles/Luau.Common.dir/Common/src/TimeTrace.cpp.o
+/usr/bin/ranlib libLuau.Common.a

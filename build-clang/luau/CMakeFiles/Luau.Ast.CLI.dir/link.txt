@@ -1,0 +1,1 @@
+/usr/bin/clang++ -Xlinker --dependency-file=CMakeFiles/Luau.Ast.CLI.dir/link.d CMakeFiles/Luau.Ast.CLI.dir/CLI/src/Ast.cpp.o -o luau-ast  libLuau.Ast.a libLuau.Analysis.a libLuau.CLI.lib.a -lpthread libLuau.Config.a libLuau.Compiler.a libLuau.Ast.a libLuau.VM.a libLuau.Common.a

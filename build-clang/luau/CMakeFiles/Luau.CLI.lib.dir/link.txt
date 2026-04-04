@@ -1,0 +1,2 @@
+/usr/bin/ar qc libLuau.CLI.lib.a CMakeFiles/Luau.CLI.lib.dir/CLI/src/FileUtils.cpp.o CMakeFiles/Luau.CLI.lib.dir/CLI/src/Flags.cpp.o CMakeFiles/Luau.CLI.lib.dir/CLI/src/VfsNavigator.cpp.o
+/usr/bin/ranlib libLuau.CLI.lib.a

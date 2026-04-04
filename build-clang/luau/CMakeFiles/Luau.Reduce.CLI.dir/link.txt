@@ -1,0 +1,1 @@
+/usr/bin/clang++ -Xlinker --dependency-file=CMakeFiles/Luau.Reduce.CLI.dir/link.d CMakeFiles/Luau.Reduce.CLI.dir/CLI/src/Reduce.cpp.o -o luau-reduce  libLuau.Common.a libLuau.Ast.a libLuau.Analysis.a libLuau.CLI.lib.a -lpthread libLuau.Config.a libLuau.Compiler.a libLuau.Ast.a libLuau.VM.a libLuau.Common.a
