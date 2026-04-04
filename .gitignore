@@ -1,5 +1,6 @@
 out/**/*
 build/**/*
+build-*/**/*
 **/node_modules/**/*
 .cache/**/*
 *.code-workspace

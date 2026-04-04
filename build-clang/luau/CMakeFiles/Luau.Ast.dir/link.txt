@@ -1,2 +1,0 @@
-/usr/bin/ar qc libLuau.Ast.a CMakeFiles/Luau.Ast.dir/Ast/src/Allocator.cpp.o CMakeFiles/Luau.Ast.dir/Ast/src/Ast.cpp.o CMakeFiles/Luau.Ast.dir/Ast/src/Confusables.cpp.o CMakeFiles/Luau.Ast.dir/Ast/src/Cst.cpp.o CMakeFiles/Luau.Ast.dir/Ast/src/Lexer.cpp.o CMakeFiles/Luau.Ast.dir/Ast/src/Location.cpp.o CMakeFiles/Luau.Ast.dir/Ast/src/Parser.cpp.o CMakeFiles/Luau.Ast.dir/Ast/src/PrettyPrinter.cpp.o
-/usr/bin/ranlib libLuau.Ast.a

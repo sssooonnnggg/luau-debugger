@@ -1,1 +1,0 @@
-/usr/bin/clang++ -Xlinker --dependency-file=CMakeFiles/Luau.Compile.CLI.dir/link.d CMakeFiles/Luau.Compile.CLI.dir/CLI/src/Compile.cpp.o -o luau-compile  libLuau.Compiler.a libLuau.VM.a libLuau.CodeGen.a libLuau.CLI.lib.a -lpthread libLuau.Config.a libLuau.Compiler.a libLuau.VM.a libLuau.Ast.a libLuau.Common.a

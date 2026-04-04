@@ -1,2 +1,0 @@
-/usr/bin/ar qc libLuau.Config.a CMakeFiles/Luau.Config.dir/Config/src/Config.cpp.o CMakeFiles/Luau.Config.dir/Config/src/LinterConfig.cpp.o CMakeFiles/Luau.Config.dir/Config/src/LuauConfig.cpp.o
-/usr/bin/ranlib libLuau.Config.a

@@ -60,6 +60,16 @@ class Number {
   }
 };
 
+class Integer {
+ public:
+  static constexpr lua_Type type = LUA_TINTEGER;
+  static std::string typeName() { return lua_typename(nullptr, type); }
+  static std::string toString(lua_State* L, int index) {
+    int64_t value = lua_tointeger64(L, index, nullptr);
+    return std::format("{}", value);
+  }
+};
+
 class String {
  public:
   static constexpr lua_Type type = LUA_TSTRING;
@@ -125,6 +135,7 @@ using RegisteredTypes = TypeList<Nil,
                                  Boolean,
                                  Vector,
                                  Number,
+                                 Integer,
                                  String,
                                  LightUserData,
                                  Table,
